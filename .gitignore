@@ -225,3 +225,10 @@ optimization_test/evoman_solstate
 optimization_test/gen.txt
 optimization_test/neuroended
 optimization_test/results.txt
+
+# example notebooks
+one_max_problem_SOLUTION.ipynb   
+one_max_problem_STUDENT.ipynb   
+simple_neural_network_example.ipynb  
+'TSP_STUDENT (1).ipynb'   
+TSP_STUDENT.ipynb
