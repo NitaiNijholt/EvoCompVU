@@ -59,7 +59,6 @@ run_mode = 'train' # train or test
 # number of weights for multilayer with 10 hidden neurons
 n_vars = (env.get_num_sensors()+1)*n_hidden_neurons + (n_hidden_neurons+1)*5
 
-
 dom_u = 1
 dom_l = -1
 npop = 100
