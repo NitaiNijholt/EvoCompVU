@@ -5,7 +5,6 @@ import os
 
 
 class Evolve:
-
     def __init__(self, experiment_name, n_hidden_neurons, population_size, generations, mutation_probability):
         self.env = Environment(experiment_name=experiment_name,
                   enemies=[8],
@@ -31,7 +30,6 @@ class Evolve:
         self.mean = np.mean(self.fitness_population)
         self.std = np.std(self.fitness_population)
                 
-
     def generate_population(self):
         return np.random.uniform(self.dom_l, self.dom_u, (self.population_size, self.n_vars))
 
@@ -40,14 +38,17 @@ class Evolve:
         f,p,e,t = self.env.play(pcont=individual)
         return f
     
-    # normalizes
     def norm(self, fitness_individual):
+        """
+        Normalizes the fitness functions to be within the range of 0 and 1
+        """ 
         return max(0.0000000001, (fitness_individual - min(self.fitness_population)) / (max(self.fitness_population) - min(self.fitness_population)))
 
-    # evaluation
     def get_fitness(self, population=None):
-        # population is a list of genotypes, where the genotype is the values for the weights in the neural network
-        # returns array of the fitness of the individuals in the population
+        """
+        Population is a list of genotypes, where the genotype is the values for the weights in the neural network
+        returns array of the fitness of the individuals in the population
+        """
         if type(population) == np.ndarray:
             return np.array([self.simulation(individual) for individual in population])
         return np.array([self.simulation(individual) for individual in self.population])
@@ -58,16 +59,16 @@ class Evolve:
         It draws randomly with replacement k individuals and returns the fittest individual.
         '''
         
-        # First step: Choose a random individual and score it
+        # Choose a random individual and score it
         number_individuals = len(self.population)
         current_winner = np.random.randint(number_individuals)
 
-        # Get the score which is the one to beat!
+        # Get the score which is the one to beat
         score = self.fitness_population[current_winner]
         
         # We already have one candidate, so we are left with k-1 to choose
         for i in range(k-1):
-            new_score = self.fitness_population[candidate:=np.random.randint(0, number_individuals)]
+            new_score = self.fitness_population[candidate:=np.random.randint(number_individuals)]
             if new_score < score:
                 current_winner = candidate
                 score = new_score
@@ -95,10 +96,7 @@ class Evolve:
 
             # Make mating pool according to tournament selection
             mating_pool = [self.tournament(k) for i in range(n_offspring)]
-
             offspring =  np.zeros((n_offspring, self.n_vars))
-
-
             cross_prop = np.random.uniform()
 
             for j in range(len(offspring[0])):
@@ -109,8 +107,8 @@ class Evolve:
                     offspring[0][j] = mating_pool[1][j]
                     offspring[1][j] = mating_pool[0][j]
 
+            # Mutates the offspring
             for individual in offspring:
-                # Mutates the offspring
                 for i in range(len(individual)):
                     if np.random.uniform() <= self.mutation_probability:
                         individual[i] += np.random.normal(0, 1)
@@ -125,10 +123,10 @@ class Evolve:
     def run(self):
 
         self.env.state_to_log() 
-        ini_g = 0
+        ini_g = 1
         print(f"GENERATION {ini_g} {round(self.fitness_population[self.best],6)} {round(self.mean,6)} {round(self.std,6)}")
 
-        for i in range(ini_g + 1, self.generations):
+        for i in range(ini_g, self.generations + 1):
 
             # New individuals by crossover
             offspring = self.crossover()
@@ -159,7 +157,7 @@ class Evolve:
             self.fitness_population = self.fitness_population[chosen]
 
             self.best = np.argmax(self.fitness_population)
-            self.std  =  np.std(self.fitness_population)
+            self.std = np.std(self.fitness_population)
             self.mean = np.mean(self.fitness_population)
 
 
