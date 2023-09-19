@@ -119,7 +119,7 @@ class Evolve:
         # Mutates the offspring
         for i in range(len(individual)):
             if np.random.uniform() <= self.mutation_probability:
-                individual[i] += np.random.normal(0, 1)
+                individual[i] += np.random.normal(0, 0.5)
 
         # Ensures no weight is outside the range [-1, 1]
         individual = [self.limits(weight) for weight in individual]
