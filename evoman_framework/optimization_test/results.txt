@@ -41,3 +41,27 @@ gen best mean std
 
 gen best mean std
 29 92.296695 81.497575 19.29163
+
+gen best mean std
+29 92.296695 81.497575 19.29163
+
+gen best mean std
+29 92.296695 81.497575 19.29163
+
+gen best mean std
+29 92.296695 81.497575 19.29163
+
+gen best mean std
+29 92.296695 81.497575 19.29163
+
+gen best mean std
+29 92.296695 81.497575 19.29163
+
+gen best mean std
+29 92.296695 81.497575 19.29163
+
+gen best mean std
+29 92.296695 81.497575 19.29163
+
+gen best mean std
+29 92.296695 81.497575 19.29163
