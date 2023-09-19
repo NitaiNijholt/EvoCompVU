@@ -118,6 +118,7 @@ class Evolve:
     def mutate(self, individual):
         # Mutates the offspring
         for i in range(len(individual)):
+            ## have a mutation probability
             if np.random.uniform() <= self.mutation_probability:
                 individual[i] += np.random.normal(0, 0.5)
 
