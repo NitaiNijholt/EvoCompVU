@@ -25,12 +25,15 @@ class Evolve:
         self.generations = generations
         self.population_size = population_size
 
-        self.population = np.random.uniform(self.dom_l, self.dom_u, (self.population_size, self.n_vars))
+        self.population = self.generate_population()
         self.fitness_population = self.get_fitness()
         self.best = np.argmax(self.fitness_population)
         self.mean = np.mean(self.fitness_population)
         self.std = np.std(self.fitness_population)
                 
+
+    def generate_population(self):
+        return np.random.uniform(self.dom_l, self.dom_u, (self.population_size, self.n_vars))
 
     # Runs simulation, returns fitness f
     def simulation(self, individual):
@@ -38,11 +41,11 @@ class Evolve:
         return f
     
     # normalizes
-    def norm(self, fitness_individual, pfit_pop):
-        return max(0.0000000001, (fitness_individual - min(pfit_pop) )/( max(pfit_pop) - min(pfit_pop)))
+    def norm(self, fitness_individual):
+        return max(0.0000000001, (fitness_individual - min(self.fitness_population)) / (max(self.fitness_population) - min(self.fitness_population)))
 
     # evaluation
-    def get_fitness(self, population=0):
+    def get_fitness(self, population=None):
         # population is a list of genotypes, where the genotype is the values for the weights in the neural network
         # returns array of the fitness of the individuals in the population
         if type(population) == np.ndarray:
@@ -140,7 +143,7 @@ class Evolve:
             self.best = np.argmax(self.fitness_population)
 
             # Avoiding negative probabilities, as fitness is ranges from negative numbers
-            fitness_population_normalized = np.array([self.norm(fitness_individual, self.fitness_population) for fitness_individual in self.fitness_population])
+            fitness_population_normalized = np.array([self.norm(fitness_individual) for fitness_individual in self.fitness_population])
 
             # Calculate probability of surviving generation according to fitness individuals
             probs = fitness_population_normalized/sum(fitness_population_normalized)
