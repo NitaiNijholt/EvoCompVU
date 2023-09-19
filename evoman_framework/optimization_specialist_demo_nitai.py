@@ -105,7 +105,7 @@ def limits(x):
 
 # tournament
 
-def tournament(population: List[List[float]], k: int = 1, lambda_: int = 2, fitness_func: Callable[[List[float]], float] = fit_pop) -> List[List[float]]:
+def tournament(population: List[List[float]], k: int = 1, lambda_: int = 2, fitness_func: Callable[[List[float]], float] = 0) -> List[List[float]]:
     '''Select k random individuals from the population and return the lambda best individuals'''
 
     # Select k random indexes from the population
@@ -139,7 +139,7 @@ def uniform_crossover(parent1: List[float], parent2: List[float]) -> List[float]
     
     return child
 
-def population_crossover(population: List[List[float]], crossover_rate=0.5, k = 5, lambda_=1, fitness_func=fit_pop):
+def population_crossover(population: List[List[float]], crossover_rate=0.5, k = 5, lambda_=1, fitness_func=evaluate):
     """Performs crossover between the population. Returns a new population with the same size as the original with crossover performed on some individuals."""
     # Initialize a new population.
     new_population = np.zeros(population.shape)
@@ -157,10 +157,9 @@ def population_crossover(population: List[List[float]], crossover_rate=0.5, k = 
         else:
             # If no crossover is performed, retain the original individual.
             new_population[i] = population[i]
-    
     return new_population
 
-def population_mutation(population:List[List[float]], mutation_rate=0.1:float) -> List[List[float]]:
+def population_mutation(population:List[List[float]], mutation_rate=0.1):
     """Performs mutation on the population."""
     new_population = np.zeros(population.shape)
     # Iterate over each individual in the population.
@@ -178,33 +177,34 @@ def population_mutation(population:List[List[float]], mutation_rate=0.1:float) -
     return new_population
 
     # crossover
-# def crossover(pop):
+def crossover(pop):
+    print(pop)
+    print(pop.shape)
+    total_offspring = np.zeros((0,n_vars))
 
-#     total_offspring = np.zeros((0,n_vars))
 
+    for p in range(0,pop.shape[0], 2):
+        p1 = tournament(pop)
+        p2 = tournament(pop)
 
-#     for p in range(0,pop.shape[0], 2):
-#         p1 = tournament(pop)
-#         p2 = tournament(pop)
+        n_offspring =   np.random.randint(1,3+1, 1)[0]
+        offspring =  np.zeros( (n_offspring, n_vars) )
 
-#         n_offspring =   np.random.randint(1,3+1, 1)[0]
-#         offspring =  np.zeros( (n_offspring, n_vars) )
+        for f in range(0,n_offspring):
 
-#         for f in range(0,n_offspring):
+            cross_prop = np.random.uniform(0,1)
+            offspring[f] = p1*cross_prop+p2*(1-cross_prop)
 
-#             cross_prop = np.random.uniform(0,1)
-#             offspring[f] = p1*cross_prop+p2*(1-cross_prop)
+            # mutation
+            for i in range(0,len(offspring[f])):
+                if np.random.uniform(0 ,1)<=mutation:
+                    offspring[f][i] =   offspring[f][i]+np.random.normal(0, 1)
 
-#             # mutation
-#             for i in range(0,len(offspring[f])):
-#                 if np.random.uniform(0 ,1)<=mutation:
-#                     offspring[f][i] =   offspring[f][i]+np.random.normal(0, 1)
+            offspring[f] = np.array(list(map(lambda y: limits(y), offspring[f])))
 
-#             offspring[f] = np.array(list(map(lambda y: limits(y), offspring[f])))
+            total_offspring = np.vstack((total_offspring, offspring[f]))
 
-#             total_offspring = np.vstack((total_offspring, offspring[f]))
-
-#     return total_offspring
+    return total_offspring
 
 
 # kills the worst genomes, and replace with new best/random solutions
