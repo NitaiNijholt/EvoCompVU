@@ -138,20 +138,24 @@ class Evolve:
             # New individuals by crossover
             offspring = self.crossover()
             fitness_offspring = self.get_fitness(offspring)
-            print(fitness_offspring)
+            # print(fitness_offspring)
+
             
             # in (mu, lamda_ survivor selection the offspring replaces all the parents
             self.population = offspring
 
-            # select best lambda_ individuals
+            # find the lambda_ fittest individuals
             fittest = np.argsort(fitness_offspring)[::-1][:lambda_]
+
+            # print statements, might come in handy for code understanding & debugging
             # print(fittest)
-            fittest_individual_index = fittest[0]
-            print(fittest_individual_index)
-            print(fitness_offspring[fittest_individual_index])
+            # fittest_individual_index = fittest[0]
+            # print(fittest_individual_index)
+            # print(fitness_offspring[fittest_individual_index])
+
+            # select the fittest individuals from the population
             self.population = self.population[fittest]
 
-            # print(self.population.shape)
             # Pick population_size individuals at random, save the indicies
             chosen = np.random.choice(self.population.shape[0], self.original_population_size, replace=True) # replace=False means no duplicates, i.e. no individual can be selected twice. Maybe this should be True?
 
