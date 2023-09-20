@@ -7,7 +7,7 @@ import os
 class Evolve:
     def __init__(self, experiment_name, n_hidden_neurons, population_size, generations, mutation_probability):
         self.env = Environment(experiment_name=experiment_name,
-                  enemies=[8],
+                  enemies=[3],
                   playermode="ai",
                   player_controller=player_controller(n_hidden_neurons),
                   enemymode="static",
@@ -33,8 +33,10 @@ class Evolve:
     def generate_population(self):
         return np.random.uniform(self.dom_l, self.dom_u, (self.population_size, self.n_vars))
 
-    # Runs simulation, returns fitness f
     def simulation(self, individual):
+        """
+        Plays the game with the individual, returns the fitness according to proposed formula
+        """ 
         f,p,e,t = self.env.play(pcont=individual)
         return f
     
@@ -107,19 +109,23 @@ class Evolve:
                     offspring[0][j] = mating_pool[1][j]
                     offspring[1][j] = mating_pool[0][j]
 
-            # Mutates the offspring
-            for individual in offspring:
-                for i in range(len(individual)):
-                    if np.random.uniform() <= self.mutation_probability:
-                        individual[i] += np.random.normal(0, 1)
-
-                # Ensures no weight is outside the range [-1, 1]
-                individual = [self.limits(weight) for weight in individual]
-
-                total_offspring.append(individual)
+            total_offspring.append(offspring[0])
+            total_offspring.append(offspring[1])
 
         return np.array(total_offspring)
     
+
+    def mutate(self, individual):
+        # Mutates the offspring
+        for i in range(len(individual)):
+            ## have a mutation probability
+            if np.random.uniform() <= self.mutation_probability:
+                individual[i] += np.random.normal(0, 0.5)
+
+        # Ensures no weight is outside the range [-1, 1]
+        individual = [self.limits(weight) for weight in individual]
+        return individual
+
     def run(self):
 
         self.env.state_to_log() 
@@ -130,6 +136,9 @@ class Evolve:
 
             # New individuals by crossover
             offspring = self.crossover()
+
+            offspring = [self.mutate(individual) for individual in offspring]
+
             fitness_offspring = self.get_fitness(offspring)
 
 
