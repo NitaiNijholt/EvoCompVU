@@ -1,0 +1,14 @@
+Jasper survivor selection (roulette wheel + elitism)
+
+run nr, generation nr, best fitness, mean, std
+run 1 GENERATION 30 86.691917 49.287678 21.431944
+run 2 GENERATION 30 86.39141 43.553068 25.892933
+run 3 GENERATION 30 86.838793 56.739903 26.25376
+
+
+Nitai survivor selection (mu, lamba selection, described in Eiben & Smith p. 89)
+
+run nr, generation nr, best fitness, mean, std
+run 1 GENERATION 30 90.603246 90.352418 0.1761
+run 2 GENERATION 30 91.033561 90.527761 0.292866
+run 3 GENERATION 30 91.009641 90.820826 0.102713
