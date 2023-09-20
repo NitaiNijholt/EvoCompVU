@@ -5,9 +5,10 @@ import os
 
 
 class Evolve:
-    def __init__(self, experiment_name, n_hidden_neurons, population_size, generations, mutation_probability):
+
+    def __init__(self, experiment_name, n_hidden_neurons, population_size, generations, mutation_probability, recombination, k, n_parents, n_offspring, enemy=8):
         self.env = Environment(experiment_name=experiment_name,
-                  enemies=[3],
+                  enemies=[enemy],
                   playermode="ai",
                   player_controller=player_controller(n_hidden_neurons),
                   enemymode="static",
@@ -18,58 +19,55 @@ class Evolve:
         self.n_hidden_neurons = n_hidden_neurons
         self.n_vars = (self.env.get_num_sensors() + 1) * self.n_hidden_neurons + (self.n_hidden_neurons + 1) * 5
 
+        self.recombination = recombination
+        self.k = k
+        self.n_parents = n_parents
+        self.n_offspring = n_offspring
         self.dom_u = 1
         self.dom_l = -1
         self.mutation_probability = mutation_probability
         self.generations = generations
         self.population_size = population_size
 
-        self.population = self.generate_population()
+        self.population = np.random.uniform(self.dom_l, self.dom_u, (self.population_size, self.n_vars))
         self.fitness_population = self.get_fitness()
         self.best = np.argmax(self.fitness_population)
         self.mean = np.mean(self.fitness_population)
         self.std = np.std(self.fitness_population)
                 
-    def generate_population(self):
-        return np.random.uniform(self.dom_l, self.dom_u, (self.population_size, self.n_vars))
 
+    # Runs simulation, returns fitness f
     def simulation(self, individual):
-        """
-        Plays the game with the individual, returns the fitness according to proposed formula
-        """ 
         f,p,e,t = self.env.play(pcont=individual)
         return f
     
-    def norm(self, fitness_individual):
-        """
-        Normalizes the fitness functions to be within the range of 0 and 1
-        """ 
-        return max(0.0000000001, (fitness_individual - min(self.fitness_population)) / (max(self.fitness_population) - min(self.fitness_population)))
+    # normalizes
+    def norm(self, fitness_individual, pfit_pop):
+        return max(0.0000000001, (fitness_individual - min(pfit_pop) )/( max(pfit_pop) - min(pfit_pop)))
 
-    def get_fitness(self, population=None):
-        """
-        Population is a list of genotypes, where the genotype is the values for the weights in the neural network
-        returns array of the fitness of the individuals in the population
-        """
+    # evaluation
+    def get_fitness(self, population=0):
+        # population is a list of genotypes, where the genotype is the values for the weights in the neural network
+        # returns array of the fitness of the individuals in the population
         if type(population) == np.ndarray:
             return np.array([self.simulation(individual) for individual in population])
         return np.array([self.simulation(individual) for individual in self.population])
 
-    def tournament(self, k):
+    def tournament(self):
         '''
         Implements the tournament selection algorithm. 
         It draws randomly with replacement k individuals and returns the fittest individual.
         '''
         
-        # Choose a random individual and score it
+        # First step: Choose a random individual and score it
         number_individuals = len(self.population)
         current_winner = np.random.randint(number_individuals)
 
-        # Get the score which is the one to beat
+        # Get the score which is the one to beat!
         score = self.fitness_population[current_winner]
         
         # We already have one candidate, so we are left with k-1 to choose
-        for i in range(k-1):
+        for i in range(self.k-1):
             new_score = self.fitness_population[candidate:=np.random.randint(number_individuals)]
             if new_score < score:
                 current_winner = candidate
@@ -86,58 +84,69 @@ class Evolve:
             return self.dom_l
         return x
 
-    # crossover
-    def crossover(self):
+    def uniform_crossover(self, mating_pool, offspring):
+        cross_prop = np.random.uniform()
+
+        for j in range(len(offspring[0])):
+            if np.random.uniform() < cross_prop:
+                offspring[0][j] = mating_pool[0][j]
+                offspring[1][j] = mating_pool[1][j]
+            else:
+                offspring[0][j] = mating_pool[1][j]
+                offspring[1][j] = mating_pool[0][j]
+
+        return offspring
+    
+    def line_recombination(self, mating_pool, offspring):
+        for individual in offspring:
+            alpha = np.random.uniform(-0.25, 1.25)
+            for i in range(len(individual)):
+                individual[i] = mating_pool[0][i] + alpha * (mating_pool[0][i] - mating_pool[1][i])
+        return offspring
+
+
+    def reproduce(self):
 
         total_offspring = []
-        n_offspring = 2
-        k = 3
 
-        # Loop over number of parent pairs/triplets/whatever
-        for p in range(int(self.population.shape[0]/n_offspring)):
+        # Loop over number of reproductions
+        for reproduction in range(int(self.population.shape[0]/self.n_offspring)):
 
             # Make mating pool according to tournament selection
-            mating_pool = [self.tournament(k) for i in range(n_offspring)]
-            offspring =  np.zeros((n_offspring, self.n_vars))
-            cross_prop = np.random.uniform()
+            mating_pool = [self.tournament() for i in range(self.n_parents)]
 
-            for j in range(len(offspring[0])):
-                if np.random.uniform() < cross_prop:
-                    offspring[0][j] = mating_pool[0][j]
-                    offspring[1][j] = mating_pool[1][j]
-                else:
-                    offspring[0][j] = mating_pool[1][j]
-                    offspring[1][j] = mating_pool[0][j]
+            offspring =  np.zeros((self.n_offspring, self.n_vars))
 
-            total_offspring.append(offspring[0])
-            total_offspring.append(offspring[1])
+            if self.recombination == 'uniform':
+                offspring = self.uniform_crossover(mating_pool, offspring)
+            elif self.recombination == 'line':
+                offspring = self.line_recombination(mating_pool, offspring)
+
+            for individual in offspring:
+                # Mutates and ensures no weight is outside the range [-1, 1]
+                individual = self.mutate(individual)
+                individual = [self.limits(weight) for weight in individual]
+                total_offspring.append(individual)
 
         return np.array(total_offspring)
     
-
     def mutate(self, individual):
         # Mutates the offspring
         for i in range(len(individual)):
             if np.random.uniform() <= self.mutation_probability:
-                individual[i] += np.random.normal(0, 1)
-
-        # Ensures no weight is outside the range [-1, 1]
-        individual = [self.limits(weight) for weight in individual]
+                individual[i] += np.random.normal(0, 0.5)
         return individual
 
     def run(self):
 
         self.env.state_to_log() 
-        ini_g = 1
-        print(f"GENERATION {ini_g} {round(self.fitness_population[self.best],6)} {round(self.mean,6)} {round(self.std,6)}")
+        ini_g = 0
+        print(f"GENERATION {ini_g} {round(self.fitness_population[self.best], 6)} {round(self.mean, 6)} {round(self.std, 6)}")
 
-        for i in range(ini_g, self.generations + 1):
+        for i in range(ini_g + 1, self.generations):
 
             # New individuals by crossover
-            offspring = self.crossover()
-
-            offspring = [self.mutate(individual) for individual in offspring]
-
+            offspring = self.reproduce()
             fitness_offspring = self.get_fitness(offspring)
 
 
@@ -149,7 +158,7 @@ class Evolve:
             self.best = np.argmax(self.fitness_population)
 
             # Avoiding negative probabilities, as fitness is ranges from negative numbers
-            fitness_population_normalized = np.array([self.norm(fitness_individual) for fitness_individual in self.fitness_population])
+            fitness_population_normalized = np.array([self.norm(fitness_individual, self.fitness_population) for fitness_individual in self.fitness_population])
 
             # Calculate probability of surviving generation according to fitness individuals
             probs = fitness_population_normalized/sum(fitness_population_normalized)
@@ -165,11 +174,11 @@ class Evolve:
             self.fitness_population = self.fitness_population[chosen]
 
             self.best = np.argmax(self.fitness_population)
-            self.std = np.std(self.fitness_population)
+            self.std  =  np.std(self.fitness_population)
             self.mean = np.mean(self.fitness_population)
 
 
-            print(f"GENERATION {i} {round(self.fitness_population[self.best],6)} {round(self.mean,6)} {round(self.std,6)}")
+            print(f"GENERATION {i} {round(self.fitness_population[self.best], 6)} {round(self.mean, 6)} {round(self.std, 6)}")
 
 
 
@@ -177,7 +186,11 @@ os.environ["SDL_VIDEODRIVER"] = "dummy"
 population_size = 100
 generations = 30
 mutation_probability = 0.2
-experiment_name = 'optimization_test'
 n_hidden_neurons = 10
-evolve = Evolve(experiment_name, n_hidden_neurons, population_size, generations, mutation_probability)
+recombination = 'line'
+k = 3
+n_parents = 2
+n_offspring = 2
+experiment_name = 'optimization_test'
+evolve = Evolve(experiment_name, n_hidden_neurons, population_size, generations, mutation_probability, recombination, k, n_parents, n_offspring)
 evolve.run()
