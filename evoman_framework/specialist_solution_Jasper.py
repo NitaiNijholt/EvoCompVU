@@ -6,7 +6,7 @@ import os
 
 class Evolve:
 
-    def __init__(self, experiment_name, n_hidden_neurons, population_size, generations, mutation_probability, recombination, k, n_parents, n_offspring, enemy=8):
+    def __init__(self, experiment_name, n_hidden_neurons, population_size, generations, mutation_probability, recombination, k, n_parents, n_offspring, lambda_, enemy=8):
         self.env = Environment(experiment_name=experiment_name,
                   enemies=[enemy],
                   playermode="ai",
@@ -19,6 +19,7 @@ class Evolve:
         self.n_hidden_neurons = n_hidden_neurons
         self.n_vars = (self.env.get_num_sensors() + 1) * self.n_hidden_neurons + (self.n_hidden_neurons + 1) * 5
 
+        self.lambda_ = lambda_
         self.recombination = recombination
         self.k = k
         self.n_parents = n_parents
@@ -34,7 +35,6 @@ class Evolve:
         self.best = np.argmax(self.fitness_population)
         self.mean = np.mean(self.fitness_population)
         self.std = np.std(self.fitness_population)
-                
 
     # Runs simulation, returns fitness f
     def simulation(self, individual):
@@ -42,8 +42,8 @@ class Evolve:
         return f
     
     # normalizes
-    def norm(self, fitness_individual, pfit_pop):
-        return max(0.0000000001, (fitness_individual - min(pfit_pop) )/( max(pfit_pop) - min(pfit_pop)))
+    def norm(self, fitness_individual):
+        return max(0.0000000001, (fitness_individual - min(self.fitness_population)) / (max(self.fitness_population) - min(self.fitness_population)))
 
     # evaluation
     def get_fitness(self, population=0):
@@ -59,25 +59,21 @@ class Evolve:
         It draws randomly with replacement k individuals and returns the fittest individual.
         '''
         
-        # First step: Choose a random individual and score it
-        number_individuals = len(self.population)
-        current_winner = np.random.randint(number_individuals)
+        # Select k random indexes from the population
+        k_indexes = np.random.randint(0, len(self.population), k)
+        selected_individuals = np.array([self.population[index] for index in k_indexes])
 
-        # Get the score which is the one to beat!
-        score = self.fitness_population[current_winner]
-        
-        # We already have one candidate, so we are left with k-1 to choose
-        for i in range(self.k-1):
-            new_score = self.fitness_population[candidate:=np.random.randint(number_individuals)]
-            if new_score < score:
-                current_winner = candidate
-                score = new_score
+        # Compute the fitness of the selected individuals
+        fitness_of_individuals = self.fitness_population[k_indexes]
 
-        return self.population[current_winner]
+        # Sort the individuals based on their fitness
+        sorted_indices = np.argsort(fitness_of_individuals)[::-1]
+
+        # Get the lambda best individuals
+        return [selected_individuals[i] for i in sorted_indices[:self.lambda_]]
     
     # limits
     def limits(self, x):
-
         if x > self.dom_u:
             return self.dom_u
         if x < self.dom_l:
@@ -104,16 +100,14 @@ class Evolve:
                 individual[i] = mating_pool[0][i] + alpha * (mating_pool[0][i] - mating_pool[1][i])
         return offspring
 
-
     def reproduce(self):
-
         total_offspring = []
 
         # Loop over number of reproductions
-        for reproduction in range(int(self.population.shape[0]/self.n_offspring)):
+        for reproduction in range(int(len(self.population) / self.n_offspring)):
 
             # Make mating pool according to tournament selection
-            mating_pool = [self.tournament() for i in range(self.n_parents)]
+            mating_pool = np.array([self.tournament()[j] for _ in range(int(self.n_parents / self.lambda_)) for j in range(self.lambda_)])
 
             offspring =  np.zeros((self.n_offspring, self.n_vars))
 
@@ -158,13 +152,13 @@ class Evolve:
             self.best = np.argmax(self.fitness_population)
 
             # Avoiding negative probabilities, as fitness is ranges from negative numbers
-            fitness_population_normalized = np.array([self.norm(fitness_individual, self.fitness_population) for fitness_individual in self.fitness_population])
+            fitness_population_normalized = np.array([self.norm(fitness_individual) for fitness_individual in self.fitness_population])
 
             # Calculate probability of surviving generation according to fitness individuals
             probs = fitness_population_normalized/sum(fitness_population_normalized)
 
             # Pick population_size individuals at random, weighted according to their fitness
-            chosen = np.random.choice(self.population.shape[0], self.population_size, p=probs, replace=False)
+            chosen = np.random.choice(len(self.population), self.population_size, p=probs, replace=False)
 
             # Delete first individual and replace it with the best individual. This raises the average fitness, as the best individual probably already was in the selection made, and now has a clone in the population
             chosen = np.append(chosen[1:], self.best)
@@ -177,7 +171,6 @@ class Evolve:
             self.std  =  np.std(self.fitness_population)
             self.mean = np.mean(self.fitness_population)
 
-
             print(f"GENERATION {i} {round(self.fitness_population[self.best], 6)} {round(self.mean, 6)} {round(self.std, 6)}")
 
 
@@ -188,9 +181,10 @@ generations = 30
 mutation_probability = 0.2
 n_hidden_neurons = 10
 recombination = 'line'
-k = 3
+k = 5
+lambda_ = 2
 n_parents = 2
 n_offspring = 2
 experiment_name = 'optimization_test'
-evolve = Evolve(experiment_name, n_hidden_neurons, population_size, generations, mutation_probability, recombination, k, n_parents, n_offspring)
+evolve = Evolve(experiment_name, n_hidden_neurons, population_size, generations, mutation_probability, recombination, k, n_parents, n_offspring, lambda_)
 evolve.run()
