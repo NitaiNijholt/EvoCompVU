@@ -6,7 +6,7 @@ import os
 
 class Evolve:
 
-    def __init__(self, experiment_name, n_hidden_neurons, population_size, generations, mutation_probability, recombination, survivor_selection, k, n_parents, n_offspring, lambda_, enemy=8):
+    def __init__(self, experiment_name, n_hidden_neurons, population_size, generations, mutation_probability, recombination, survivor_selection, k, n_parents, n_offspring, tournament_lambda, survivor_lambda, enemy=8):
         self.env = Environment(experiment_name=experiment_name,
                   enemies=[enemy],
                   playermode="ai",
@@ -19,7 +19,8 @@ class Evolve:
         self.n_hidden_neurons = n_hidden_neurons
         self.n_vars = (self.env.get_num_sensors() + 1) * self.n_hidden_neurons + (self.n_hidden_neurons + 1) * 5
 
-        self.lambda_ = lambda_
+        self.tournament_lambda = tournament_lambda
+        self.survivor_lambda = survivor_lambda
         self.recombination = recombination
         self.survivor_mode = survivor_selection
         self.k = k
@@ -72,7 +73,7 @@ class Evolve:
         sorted_indices = np.argsort(fitness_of_individuals)[::-1]
 
         # Get the lambda best individuals
-        return [selected_individuals[i] for i in sorted_indices[:self.lambda_]]
+        return [selected_individuals[i] for i in sorted_indices[:self.tournament_lambda]]
     
     # limits
     def limits(self, x):
@@ -109,7 +110,7 @@ class Evolve:
         for reproduction in range(int(len(self.population) / self.n_offspring)):
 
             # Make mating pool according to tournament selection
-            mating_pool = np.array([self.tournament()[j] for _ in range(int(self.n_parents / self.lambda_)) for j in range(self.lambda_)])
+            mating_pool = np.array([self.tournament()[j] for _ in range(int(self.n_parents / self.tournament_lambda)) for j in range(self.tournament_lambda)])
 
             offspring =  np.zeros((self.n_offspring, self.n_vars))
 
@@ -141,13 +142,14 @@ class Evolve:
             self.population = offspring
 
             # find the lambda_ fittest individuals
-            fittest = np.argsort(fitness_offspring)[::-1][:lambda_]
+            fittest = np.argsort(fitness_offspring)[::-1][:self.survivor_lambda]
 
             # select the fittest individuals from the population
             self.population = self.population[fittest]
 
             # Pick population_size individuals at random, save the indicies
-            chosen = np.random.choice(self.population.shape[0], self.original_population_size, replace=True) # replace=False means no duplicates, i.e. no individual can be selected twice. Maybe this should be True?
+            # replace=False means no duplicates, i.e. no individual can be selected twice. Maybe this should be True?
+            chosen = np.random.choice(self.population.shape[0], self.original_population_size, replace=True)
 
             # create new population from chosen individuals
             new_population = np.array([self.population[i] for i in chosen])
@@ -215,9 +217,10 @@ recombination = 'line'
 # 'lambda,mu' or 'roulette'
 survivor_selection = 'lambda,mu'
 k = 5
-lambda_ = 2
+tournament_lambda = 2
+survivor_lambda = 20
 n_parents = 2
 n_offspring = 2
 experiment_name = 'optimization_test'
-evolve = Evolve(experiment_name, n_hidden_neurons, population_size, generations, mutation_probability, recombination, survivor_selection, k, n_parents, n_offspring, lambda_)
+evolve = Evolve(experiment_name, n_hidden_neurons, population_size, generations, mutation_probability, recombination, survivor_selection, k, n_parents, n_offspring, tournament_lambda, survivor_lambda)
 evolve.run()
