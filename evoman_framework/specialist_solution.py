@@ -64,7 +64,7 @@ class Evolve:
         # Compute the Euclidean distance between the two individuals
         return np.sqrt(np.sum((individual1 - individual2)**2))
 
-    def share(d: np.array, sigma=0, alpha=0):
+    def share(self, d: np.array, sigma=0, alpha=0):
         '''
         Adjust the similarity score based on the distance between individuals.
         If the distance (d) is less than or equal to a threshold (sigma), then the similarity is adjusted using a scaling factor.
@@ -87,7 +87,7 @@ class Evolve:
 
 
     # evaluation
-    def get_fitness(self, population=0, fitness_sharing=0):
+    def get_fitness(self, population=None, fitness_sharing=0):
         """Calculate the fitness of individuals in a population based on the simulation results. 
         If fitness sharing is enabled, the fitness of an individual is adjusted based on its similarity to others.
 
@@ -98,7 +98,8 @@ class Evolve:
         Returns:
         - np.ndarray: Array containing the fitness values of the individuals in the population.
         """
-
+        if population is None:
+            population = self.population
         # Check if the provided population is a numpy array
         if type(population) == np.ndarray:
             # Calculate the fitness for each individual in the provided population using the simulation method
@@ -106,25 +107,27 @@ class Evolve:
         else:
             # Calculate the fitness for each individual in the default population using the simulation method
             fitness = np.array([self.simulation(individual) for individual in self.population])
-
+        print(len(fitness))
         # If fitness sharing is enabled
         if fitness_sharing:
             # Initialize a zero vector to store the cumulative similarity scores for each individual
             similarity_vector = np.zeros(self.population.shape[0])
-            
+            print(len(similarity_vector))
             # Loop through each individual in the population
             for index, individual_1 in enumerate(self.population):
                 commulative_similarity = 0  # Initialize cumulative similarity for the current individual
                 
                 # Calculate the similarity score of the current individual with every other individual in the population
-                for individual_2 in population:
-                    commulative_similarity += similarity_score(individual_1, individual_2)
+                for individual_2 in self.population:
+                    commulative_similarity += self.similarity_score(individual_1, individual_2)
                 
                 # Store the cumulative similarity score for the current individual
                 similarity_vector[index] = commulative_similarity
             
             # Adjust the fitness of each individual based on its cumulative similarity score
-            fitness_shared = fitness/share(similarity_vector)
+            print(len(fitness))
+            print(len(self.share(similarity_vector)))
+            fitness_shared = fitness/self.share(similarity_vector)
             return fitness_shared
         return fitness
 
