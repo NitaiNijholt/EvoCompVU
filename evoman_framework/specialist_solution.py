@@ -2,7 +2,7 @@ from evoman.environment import Environment
 from demo_controller import player_controller
 import numpy as np
 import os
-
+import sys
 
 class Evolve:
 
@@ -107,7 +107,7 @@ class Evolve:
         total_offspring = []
 
         # Loop over number of reproductions
-        for reproduction in range(int(len(self.population) / self.n_offspring)):
+        for reproduction in range(int(self.survivor_lambda / 100 * len(self.population) / self.n_offspring)):
 
             # Make mating pool according to tournament selection
             mating_pool = np.array([self.tournament()[j] for _ in range(int(self.n_parents / self.tournament_lambda)) for j in range(self.tournament_lambda)])
@@ -142,20 +142,11 @@ class Evolve:
             self.population = offspring
 
             # find the lambda_ fittest individuals
-            fittest = np.argsort(fitness_offspring)[::-1][:self.survivor_lambda]
+            fittest = np.argsort(fitness_offspring)[::-1][:self.population_size]
 
             # select the fittest individuals from the population
             self.population = self.population[fittest]
 
-            # Pick population_size individuals at random, save the indicies
-            # replace=False means no duplicates, i.e. no individual can be selected twice. Maybe this should be True?
-            chosen = np.random.choice(self.population.shape[0], self.original_population_size, replace=True)
-
-            # create new population from chosen individuals
-            new_population = np.array([self.population[i] for i in chosen])
-
-            # # Update population and fitness_population
-            self.population = new_population
             self.fitness_population = self.get_fitness(self.population)
 
         elif self.survivor_mode == 'roulette':
@@ -204,7 +195,6 @@ class Evolve:
             print(f"GENERATION {i} {round(self.fitness_population[self.best], 6)} {round(self.mean, 6)} {round(self.std, 6)}")
 
 
-
 os.environ["SDL_VIDEODRIVER"] = "dummy"
 population_size = 100
 generations = 30
@@ -215,10 +205,10 @@ n_hidden_neurons = 10
 recombination = 'line'
 
 # 'lambda,mu' or 'roulette'
-survivor_selection = 'lambda,mu'
+survivor_selection = 'roulette'
 k = 5
 tournament_lambda = 2
-survivor_lambda = 20
+survivor_lambda = 120
 n_parents = 2
 n_offspring = 2
 experiment_name = 'optimization_test'
