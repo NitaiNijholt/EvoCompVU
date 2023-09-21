@@ -48,13 +48,86 @@ class Evolve:
     def norm(self, fitness_individual):
         return max(0.0000000001, (fitness_individual - min(self.fitness_population)) / (max(self.fitness_population) - min(self.fitness_population)))
 
+
+    def similarity_score(self, individual1, individual2):
+        '''
+        Calculate the similarity score between two individuals using the Euclidean distance.
+        
+        Parameters:
+        - individual1 (np.ndarray): The first individual's genotype (e.g., neural network weights).
+        - individual2 (np.ndarray): The second individual's genotype (e.g., neural network weights).
+        
+        Returns:
+        - float: The similarity score, which is inversely proportional to the Euclidean distance.
+        '''
+        
+        # Compute the Euclidean distance between the two individuals
+        return np.sqrt(np.sum((individual1 - individual2)**2))
+
+    def share(d: np.array, sigma=0, alpha=0):
+        '''
+        Adjust the similarity score based on the distance between individuals.
+        If the distance (d) is less than or equal to a threshold (sigma), then the similarity is adjusted using a scaling factor.
+        Otherwise, the similarity is set to zero.
+        
+        Parameters:
+        - d (np.array): The distances between individuals.
+        - sigma (float, default=0): The threshold distance for similarity adjustment.
+        - alpha (float, default=0): The scaling factor to adjust the similarity.
+        
+        Returns:
+        - np.array: The adjusted similarity scores.
+        '''
+        
+        # Vectorized operations to compute similarity scores
+        similarity = np.where(d <= sigma, 1 - (d / sigma) ** alpha, 0)
+        
+        return similarity
+
+
+
     # evaluation
-    def get_fitness(self, population=0):
-        # population is a list of genotypes, where the genotype is the values for the weights in the neural network
-        # returns array of the fitness of the individuals in the population
+    def get_fitness(self, population=0, fitness_sharing=0):
+        """Calculate the fitness of individuals in a population based on the simulation results. 
+        If fitness sharing is enabled, the fitness of an individual is adjusted based on its similarity to others.
+
+        Parameters:
+        - population (list or np.ndarray, default=0): List of genotypes. A genotype represents the values for the weights in a neural network.
+        - fitness_sharing (int, default=0): A flag to enable or disable fitness sharing. If set to 1, fitness sharing is enabled.
+
+        Returns:
+        - np.ndarray: Array containing the fitness values of the individuals in the population.
+        """
+
+        # Check if the provided population is a numpy array
         if type(population) == np.ndarray:
-            return np.array([self.simulation(individual) for individual in population])
-        return np.array([self.simulation(individual) for individual in self.population])
+            # Calculate the fitness for each individual in the provided population using the simulation method
+            fitness = np.array([self.simulation(individual) for individual in population])
+        else:
+            # Calculate the fitness for each individual in the default population using the simulation method
+            fitness = np.array([self.simulation(individual) for individual in self.population])
+
+        # If fitness sharing is enabled
+        if fitness_sharing:
+            # Initialize a zero vector to store the cumulative similarity scores for each individual
+            similarity_vector = np.zeros(self.population.shape[0])
+            
+            # Loop through each individual in the population
+            for index, individual_1 in enumerate(self.population):
+                commulative_similarity = 0  # Initialize cumulative similarity for the current individual
+                
+                # Calculate the similarity score of the current individual with every other individual in the population
+                for individual_2 in population:
+                    commulative_similarity += similarity_score(individual_1, individual_2)
+                
+                # Store the cumulative similarity score for the current individual
+                similarity_vector[index] = commulative_similarity
+            
+            # Adjust the fitness of each individual based on its cumulative similarity score
+            fitness_shared = fitness/share(similarity_vector)
+            return fitness_shared
+        return fitness
+
 
     def tournament(self):
         '''
@@ -133,7 +206,7 @@ class Evolve:
             if np.random.uniform() <= self.mutation_probability:
                 individual[i] += np.random.normal(0, 0.5)
         return individual
-
+    
 
     def survivor_selection(self, offspring, fitness_offspring):
         if self.survivor_mode == 'lambda,mu':
