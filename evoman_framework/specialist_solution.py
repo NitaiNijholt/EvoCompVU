@@ -64,7 +64,7 @@ class Evolve:
         # Compute the Euclidean distance between the two individuals
         return np.sqrt(np.sum((individual1 - individual2)**2))
 
-    def share(self, d: np.array, sigma=0, alpha=0):
+    def share(self, d: np.array, sigma=1, alpha=1):
         '''
         Adjust the similarity score based on the distance between individuals.
         If the distance (d) is less than or equal to a threshold (sigma), then the similarity is adjusted using a scaling factor.
@@ -87,7 +87,7 @@ class Evolve:
 
 
     # evaluation
-    def get_fitness(self, population=None, fitness_sharing=0):
+    def get_fitness(self, population=None, fitness_sharing=1):
         """Calculate the fitness of individuals in a population based on the simulation results. 
         If fitness sharing is enabled, the fitness of an individual is adjusted based on its similarity to others.
 
@@ -113,7 +113,6 @@ class Evolve:
         if fitness_sharing:
             # Initialize a zero vector to store the cumulative similarity scores for each individual
             similarity_vector = np.zeros(fitness.shape[0])
-            # print(len(similarity_vector))
             # Loop through each individual in the population
             for index, individual_1 in enumerate(population):
                 commulative_similarity = 0  # Initialize cumulative similarity for the current individual
