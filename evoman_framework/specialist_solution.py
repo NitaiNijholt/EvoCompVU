@@ -107,26 +107,25 @@ class Evolve:
         else:
             # Calculate the fitness for each individual in the default population using the simulation method
             fitness = np.array([self.simulation(individual) for individual in self.population])
-        print(len(fitness))
+
+
         # If fitness sharing is enabled
         if fitness_sharing:
             # Initialize a zero vector to store the cumulative similarity scores for each individual
-            similarity_vector = np.zeros(self.population.shape[0])
-            print(len(similarity_vector))
+            similarity_vector = np.zeros(fitness.shape[0])
+            # print(len(similarity_vector))
             # Loop through each individual in the population
-            for index, individual_1 in enumerate(self.population):
+            for index, individual_1 in enumerate(population):
                 commulative_similarity = 0  # Initialize cumulative similarity for the current individual
                 
                 # Calculate the similarity score of the current individual with every other individual in the population
-                for individual_2 in self.population:
+                for individual_2 in population:
                     commulative_similarity += self.similarity_score(individual_1, individual_2)
                 
                 # Store the cumulative similarity score for the current individual
                 similarity_vector[index] = commulative_similarity
             
             # Adjust the fitness of each individual based on its cumulative similarity score
-            print(len(fitness))
-            print(len(self.share(similarity_vector)))
             fitness_shared = fitness/self.share(similarity_vector)
             return fitness_shared
         return fitness
