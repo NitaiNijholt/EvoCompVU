@@ -33,11 +33,16 @@ class Evolve:
         self.population_size = population_size
         self.original_population_size = population_size
 
-        self.population = np.random.uniform(self.dom_l, self.dom_u, (self.population_size, self.n_vars))
+        self.population = self.initialize()
         self.fitness_population = self.get_fitness()
         self.best = np.argmax(self.fitness_population)
         self.mean = np.mean(self.fitness_population)
         self.std = np.std(self.fitness_population)
+
+    def initialize(self):
+        if self.survivor_mode != 'lambda,mu':
+            self.survivor_lambda = 100
+        return np.random.uniform(self.dom_l, self.dom_u, (self.population_size, self.n_vars))
 
     # Runs simulation, returns fitness f
     def simulation(self, individual):
@@ -87,7 +92,7 @@ class Evolve:
 
 
     # evaluation
-    def get_fitness(self, population=None, fitness_sharing=1):
+    def get_fitness(self, population=None, fitness_sharing=False):
         """Calculate the fitness of individuals in a population based on the simulation results. 
         If fitness sharing is enabled, the fitness of an individual is adjusted based on its similarity to others.
 
