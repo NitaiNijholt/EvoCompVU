@@ -92,7 +92,7 @@ class Evolve:
 
 
     # evaluation
-    def get_fitness(self, population=None, fitness_sharing=False):
+    def get_fitness(self, population=None, fitness_sharing=True):
         """Calculate the fitness of individuals in a population based on the simulation results. 
         If fitness sharing is enabled, the fitness of an individual is adjusted based on its similarity to others.
 
@@ -124,13 +124,13 @@ class Evolve:
                 
                 # Calculate the similarity score of the current individual with every other individual in the population
                 for individual_2 in population:
-                    commulative_similarity += self.similarity_score(individual_1, individual_2)
+                    commulative_similarity += self.share(self.similarity_score(individual_1, individual_2))
                 
                 # Store the cumulative similarity score for the current individual
                 similarity_vector[index] = commulative_similarity
             
             # Adjust the fitness of each individual based on its cumulative similarity score
-            fitness_shared = fitness/self.share(similarity_vector)
+            fitness_shared = fitness/similarity_vector
             return fitness_shared
         return fitness
 
