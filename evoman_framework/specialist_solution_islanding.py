@@ -130,7 +130,7 @@ class Evolve:
         for individual in offspring:
             alpha = np.random.uniform(-0.25, 1.25)
             for i in range(len(individual)):
-                individual[i] = mating_pool[0][i] + alpha * (mating_pool[0][i] - mating_pool[1][i])
+                individual[i] = mating_pool[0][i] + alpha * (mating_pool[1][i] - mating_pool[0][i])
         return offspring
 
     def reproduce(self):
