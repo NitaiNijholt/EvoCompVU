@@ -6,7 +6,7 @@ import sys
 
 class Evolve:
 
-    def __init__(self, experiment_name, n_hidden_neurons, population_size, generations, mutation_probability, recombination, survivor_selection, k, n_parents, n_offspring, tournament_lambda, survivor_lambda, enemy=8):
+    def __init__(self, experiment_name, n_hidden_neurons, population_size, generations, mutation_probability, mutation_sigma, recombination, survivor_selection, k, n_parents, n_offspring, tournament_lambda, survivor_lambda, sharing_alpha, sharing_sigma, enemy=8):
         self.env = Environment(experiment_name=experiment_name,
                   enemies=[enemy],
                   playermode="ai",
@@ -29,9 +29,12 @@ class Evolve:
         self.dom_u = 1
         self.dom_l = -1
         self.mutation_probability = mutation_probability
+        self.mutation_sigma = mutation_sigma
         self.generations = generations
         self.population_size = population_size
         self.original_population_size = population_size
+        self.sharing_alpha = sharing_alpha
+        self.sharing_sigma = sharing_sigma
 
         self.population = self.initialize()
         self.fitness_population = self.get_fitness()
@@ -69,7 +72,7 @@ class Evolve:
         # Compute the Euclidean distance between the two individuals
         return np.sqrt(np.sum((individual1 - individual2)**2))
 
-    def share(self, d: np.array, sigma=1, alpha=1):
+    def share(self, d: np.array):
         '''
         Adjust the similarity score based on the distance between individuals.
         If the distance (d) is less than or equal to a threshold (sigma), then the similarity is adjusted using a scaling factor.
@@ -85,7 +88,7 @@ class Evolve:
         '''
         
         # Vectorized operations to compute similarity scores
-        similarity = np.where(d <= sigma, 1 - (d / sigma) ** alpha, 0)
+        similarity = np.where(d <= self.sharing_sigma, 1 - (d / self.sharing_sigma) ** self.sharing_alpha, 0)
         
         return similarity
 
@@ -155,12 +158,12 @@ class Evolve:
         return [selected_individuals[i] for i in sorted_indices[:self.tournament_lambda]]
     
     # limits
-    def limits(self, x):
-        if x > self.dom_u:
+    def limits(self, weight):
+        if weight > self.dom_u:
             return self.dom_u
-        if x < self.dom_l:
+        if weight < self.dom_l:
             return self.dom_l
-        return x
+        return weight
 
     def uniform_crossover(self, mating_pool, offspring):
         cross_prop = np.random.uniform()
@@ -210,7 +213,7 @@ class Evolve:
         # Mutates the offspring
         for i in range(len(individual)):
             if np.random.uniform() <= self.mutation_probability:
-                individual[i] += np.random.normal(0, 0.5)
+                individual[i] += np.random.normal(0, self.mutation_sigma)
         return individual
     
 
@@ -278,6 +281,7 @@ os.environ["SDL_VIDEODRIVER"] = "dummy"
 population_size = 100
 generations = 30
 mutation_probability = 0.2
+mutation_sigma = 0.5
 n_hidden_neurons = 10
 
 # 'line' or 'uniform'
@@ -290,6 +294,10 @@ tournament_lambda = 2
 survivor_lambda = 120
 n_parents = 2
 n_offspring = 2
+
+sharing_sigma = 1
+sharing_alpha = 1
+
 experiment_name = 'optimization_test'
-evolve = Evolve(experiment_name, n_hidden_neurons, population_size, generations, mutation_probability, recombination, survivor_selection, k, n_parents, n_offspring, tournament_lambda, survivor_lambda)
+evolve = Evolve(experiment_name, n_hidden_neurons, population_size, generations, mutation_probability, mutation_sigma, recombination, survivor_selection, k, n_parents, n_offspring, tournament_lambda, survivor_lambda, sharing_alpha, sharing_sigma)
 evolve.run()
