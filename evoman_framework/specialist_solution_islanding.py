@@ -6,7 +6,7 @@ import sys
 
 class Evolve:
 
-    def __init__(self, experiment_name, n_hidden_neurons, population_size, generations, mutation_probability, recombination, survivor_selection, k, n_parents, n_offspring, tournament_lambda, survivor_lambda, enemy=8, num_islands=4):
+    def __init__(self, experiment_name, n_hidden_neurons, population_size, generations, mutation_probability, recombination, survivor_selection, k, n_parents, n_offspring, tournament_lambda, survivor_lambda, migration_frequency, migration_amount, num_islands, enemy=8):
         self.env = Environment(experiment_name=experiment_name,
                   enemies=[enemy],
                   playermode="ai",
@@ -53,17 +53,17 @@ class Evolve:
     def migrate(self):
         for i in range(self.num_islands):
             # Select the top 10 fittest individuals from the current island
-            top_10_indices = np.argsort(self.fitness_islands[i])[-10:]
+            top_indices = np.argsort(self.fitness_islands[i])
             
             # Randomly select 3 out of the top 10 for migration
-            migrant_indices = np.random.choice(top_10_indices, 3, replace=False)
+            migrant_indices = np.random.choice(top_indices, migration_amount, replace=False)
             migrants = self.islands[i][migrant_indices]
 
             # Send migrants to the next island (circular migration)
             next_island = (i + 1) % self.num_islands
 
             # Replace 3 individuals in the next island with migrants
-            replace_indices = np.random.choice(self.population_size, 3, replace=False)
+            replace_indices = np.random.choice(self.population_size, migration_amount, replace=False)
             self.islands[next_island][replace_indices] = migrants
 
             # Update the fitness of the next island after migration
@@ -239,7 +239,7 @@ class Evolve:
                 print(f"ISLAND {j} - GENERATION {i} {round(self.fitness_population[self.best], 6)} {round(self.mean, 6)} {round(self.std, 6)}")
 
             # Migration between islands
-            if i % 5 == 0:
+            if i % migration_frequency == 0:
                 print("Migration this generation")
                 self.migrate()
 
@@ -258,6 +258,9 @@ n_hidden_neurons = 10
 recombination = 'line'
 
 # 'lambda,mu' or 'roulette' REPLACE WORST?
+num_islands = 4
+migration_frequency = 1
+migration_amount = 5
 survivor_selection = 'roulette'
 k = 5
 tournament_lambda = 2
@@ -265,5 +268,5 @@ survivor_lambda = 120
 n_parents = 2
 n_offspring = 2
 experiment_name = 'optimization_test'
-evolve = Evolve(experiment_name, n_hidden_neurons, population_size, generations, mutation_probability, recombination, survivor_selection, k, n_parents, n_offspring, tournament_lambda, survivor_lambda)
+evolve = Evolve(experiment_name, n_hidden_neurons, population_size, generations, mutation_probability, recombination, survivor_selection, k, n_parents, n_offspring, tournament_lambda, survivor_lambda, migration_frequency, migration_amount, num_islands)
 evolve.run()
