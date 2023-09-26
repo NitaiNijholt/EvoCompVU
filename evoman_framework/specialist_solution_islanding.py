@@ -6,7 +6,7 @@ import sys
 
 class Evolve:
 
-    def __init__(self, experiment_name, n_hidden_neurons, population_size, generations, mutation_probability, recombination, survivor_selection, k, n_parents, n_offspring, tournament_lambda, survivor_lambda, migration_frequency, migration_amount, num_islands, enemy=8):
+    def __init__(self, experiment_name, n_hidden_neurons, population_size, generations, mutation_probability, mutation_sigma, recombination, survivor_selection, k, n_parents, n_offspring, tournament_lambda, survivor_lambda, enemy=8, num_islands=4):
         self.env = Environment(experiment_name=experiment_name,
                   enemies=[enemy],
                   playermode="ai",
@@ -29,11 +29,10 @@ class Evolve:
         self.dom_u = 1
         self.dom_l = -1
         self.mutation_probability = mutation_probability
+        self.mutation_sigma = mutation_sigma
         self.generations = generations
         self.population_size = population_size
         self.original_population_size = population_size
-        self.migration_frequency = migration_frequency
-        self.migration_amount = migration_amount
 
         self.population = self.initialize()
         self.fitness_population = self.get_fitness()
@@ -49,23 +48,23 @@ class Evolve:
 
     def initialize(self):
         if self.survivor_mode != 'lambda,mu':
-            self.survivor_lambda = 100
+            self.survivor_lambda = self.population_size
         return np.random.uniform(self.dom_l, self.dom_u, (self.population_size, self.n_vars))
     
     def migrate(self):
         for i in range(self.num_islands):
             # Select the top 10 fittest individuals from the current island
-            top_indices = np.argsort(self.fitness_islands[i])
+            top_10_indices = np.argsort(self.fitness_islands[i])[-10:]
             
             # Randomly select 3 out of the top 10 for migration
-            migrant_indices = np.random.choice(top_indices, self.migration_amount, replace=False)
+            migrant_indices = np.random.choice(top_10_indices, 3, replace=False)
             migrants = self.islands[i][migrant_indices]
 
             # Send migrants to the next island (circular migration)
             next_island = (i + 1) % self.num_islands
 
             # Replace 3 individuals in the next island with migrants
-            replace_indices = np.random.choice(self.population_size, self.migration_amount, replace=False)
+            replace_indices = np.random.choice(self.population_size, 3, replace=False)
             self.islands[next_island][replace_indices] = migrants
 
             # Update the fitness of the next island after migration
@@ -95,7 +94,7 @@ class Evolve:
         '''
         
         # Select k random indexes from the population
-        k_indexes = np.random.randint(0, len(self.population), self.k)
+        k_indexes = np.random.randint(0, len(self.population), k)
         selected_individuals = np.array([self.population[index] for index in k_indexes])
 
         # Compute the fitness of the selected individuals
@@ -139,7 +138,7 @@ class Evolve:
         total_offspring = []
 
         # Loop over number of reproductions
-        for reproduction in range(int(self.survivor_lambda / 100 * len(self.population) / self.n_offspring)):
+        for reproduction in range(int(self.survivor_lambda / self.population_size * len(self.population) / self.n_offspring)):
 
             # Make mating pool according to tournament selection
             mating_pool = np.array([self.tournament()[j] for _ in range(int(self.n_parents / self.tournament_lambda)) for j in range(self.tournament_lambda)])
@@ -163,7 +162,7 @@ class Evolve:
         # Mutates the offspring
         for i in range(len(individual)):
             if np.random.uniform() <= self.mutation_probability:
-                individual[i] += np.random.normal(0, 0.5)
+                individual[i] += np.random.normal(0, self.mutation_sigma)
         return individual
 
 
@@ -241,7 +240,7 @@ class Evolve:
                 print(f"ISLAND {j} - GENERATION {i} {round(self.fitness_population[self.best], 6)} {round(self.mean, 6)} {round(self.std, 6)}")
 
             # Migration between islands
-            if i % self.migration_frequency == 0:
+            if i % 5 == 0:
                 print("Migration this generation")
                 self.migrate()
 
@@ -254,15 +253,13 @@ os.environ["SDL_VIDEODRIVER"] = "dummy"
 population_size = 100
 generations = 30
 mutation_probability = 0.2
+mutation_sigma = 0.5
 n_hidden_neurons = 10
 
 # 'line' or 'uniform'
 recombination = 'line'
 
-# 'lambda,mu' or 'roulette' REPLACE WORST?
-num_islands = 4
-migration_frequency = 1
-migration_amount = 5
+# 'lambda,mu' or 'roulette'
 survivor_selection = 'roulette'
 k = 5
 tournament_lambda = 2
@@ -270,5 +267,5 @@ survivor_lambda = 120
 n_parents = 2
 n_offspring = 2
 experiment_name = 'optimization_test'
-evolve = Evolve(experiment_name, n_hidden_neurons, population_size, generations, mutation_probability, recombination, survivor_selection, k, n_parents, n_offspring, tournament_lambda, survivor_lambda, migration_frequency, migration_amount, num_islands)
+evolve = Evolve(experiment_name, n_hidden_neurons, population_size, generations, mutation_probability, mutation_sigma, recombination, survivor_selection, k, n_parents, n_offspring, tournament_lambda, survivor_lambda)
 evolve.run()
