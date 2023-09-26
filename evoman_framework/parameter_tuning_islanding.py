@@ -3,6 +3,7 @@ from demo_controller import player_controller
 import numpy as np
 import os
 import sys
+import optuna
 
 class Evolve:
 
@@ -117,7 +118,6 @@ class Evolve:
 
     def uniform_crossover(self, mating_pool, offspring):
         cross_prop = np.random.uniform()
-
         for j in range(len(offspring[0])):
             if np.random.uniform() < cross_prop:
                 offspring[0][j] = mating_pool[0][j]
@@ -132,7 +132,7 @@ class Evolve:
         for individual in offspring:
             alpha = np.random.uniform(-0.25, 1.25)
             for i in range(len(individual)):
-                individual[i] = mating_pool[0][i] + alpha * (mating_pool[1][i] - mating_pool[0][i])
+                individual[i] = mating_pool[0][i] + alpha * (mating_pool[1][i]-mating_pool[0][i])
         return offspring
 
     def reproduce(self):
@@ -250,25 +250,72 @@ class Evolve:
         # self.fitness_population = np.concatenate(self.fitness_islands)
 
 
+
+def objective(trial):
+    # Sample parameters
+    population_size = trial.suggest_int('population_size', 50, 200)
+    generations = trial.suggest_int('generations', 10, 100)
+    mutation_probability = trial.suggest_float('mutation_probability', 0.1, 0.5)
+    n_hidden_neurons = trial.suggest_int('n_hidden_neurons', 5, 20)
+    recombination = trial.suggest_categorical('recombination', ['line', 'uniform'])
+    survivor_selection = trial.suggest_categorical('survivor_selection', ['lambda,mu', 'roulette'])
+    k = trial.suggest_int('k', 3, 10)
+    tournament_lambda = trial.suggest_int('tournament_lambda', 1, 5)
+    survivor_lambda = trial.suggest_int('survivor_lambda', 100, 150)
+    n_parents = trial.suggest_int('n_parents', 1, 5)
+    n_offspring = trial.suggest_int('n_offspring', 1, 5)
+    migration_frequency = trial.suggest_int('migration_frequency', 1, 5)
+    migration_amount = trial.suggest_int('migration_amount', 1, 5)
+    num_islands = trial.suggest_int('num_islands', 2, 10)
+    experiment_name = 'optimization_test'
+
+    # Run your evolutionary algorithm with the sampled parameters
+    evolve = Evolve(experiment_name, n_hidden_neurons, population_size, generations, mutation_probability, recombination, survivor_selection, k, n_parents, n_offspring, tournament_lambda, survivor_lambda, migration_frequency, migration_amount, num_islands)
+    evolve.run()
+
+    # Return the negative value of the best fitness (since Optuna tries to minimize the objective)
+    # Adjust this according to your needs
+    return max(evolve.fitness_population)
+
 os.environ["SDL_VIDEODRIVER"] = "dummy"
-population_size = 100
-generations = 30
-mutation_probability = 0.2
-n_hidden_neurons = 10
+study = optuna.create_study(direction='maximize')  # or 'maximize' based on your needs
+study.optimize(objective, n_trials=2)  # You can adjust n_trials based on your computational resources
 
-# 'line' or 'uniform'
-recombination = 'line'
+print("Best trial:")
+trial = study.best_trial
+print("Value: ", trial.value)
+print("Params: ")
+for key, value in trial.params.items():
+    print(f"{key}: {value}")
 
-# 'lambda,mu' or 'roulette' REPLACE WORST?
-num_islands = 4
-migration_frequency = 1
-migration_amount = 5
-survivor_selection = 'roulette'
-k = 5
-tournament_lambda = 2
-survivor_lambda = 120
-n_parents = 2
-n_offspring = 2
-experiment_name = 'optimization_test'
-evolve = Evolve(experiment_name, n_hidden_neurons, population_size, generations, mutation_probability, recombination, survivor_selection, k, n_parents, n_offspring, tournament_lambda, survivor_lambda, migration_frequency, migration_amount, num_islands)
-evolve.run()
+from optuna.visualization import plot_optimization_history
+from optuna.visualization import plot_parallel_coordinate
+from optuna.visualization import plot_slice
+
+plot_optimization_history(study)
+plot_parallel_coordinate(study)
+plot_slice(study)
+
+
+# os.environ["SDL_VIDEODRIVER"] = "dummy"
+# population_size = 100
+# generations = 30
+# mutation_probability = 0.2
+# n_hidden_neurons = 10
+
+# # 'line' or 'uniform'
+# recombination = 'line'
+
+# # 'lambda,mu' or 'roulette' REPLACE WORST?
+# num_islands = 4
+# migration_frequency = 1
+# migration_amount = 5
+# survivor_selection = 'roulette'
+# k = 5
+# tournament_lambda = 2
+# survivor_lambda = 120
+# n_parents = 2
+# n_offspring = 2
+# experiment_name = 'optimization_test'
+# evolve = Evolve(experiment_name, n_hidden_neurons, population_size, generations, mutation_probability, recombination, survivor_selection, k, n_parents, n_offspring, tournament_lambda, survivor_lambda, migration_frequency, migration_amount, num_islands)
+# evolve.run()
