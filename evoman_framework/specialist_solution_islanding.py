@@ -204,7 +204,7 @@ class Evolve:
             self.population = self.population[chosen]
             self.fitness_population = self.fitness_population[chosen]
 
-    def run(self):
+    def run(self, migration_frequency = 5):
 
         # Initialize islands and their fitness values
         self.num_islands = 5  # Example: 5 islands
@@ -239,7 +239,7 @@ class Evolve:
                 print(f"ISLAND {j} - GENERATION {i} {round(self.fitness_population[self.best], 6)} {round(self.mean, 6)} {round(self.std, 6)}")
 
             # Migration between islands
-            if i % 5 == 0:
+            if i % migration_frequency == 0:
                 print("Migration this generation")
                 self.migrate()
 
@@ -260,10 +260,12 @@ recombination = 'line'
 # 'lambda,mu' or 'roulette'
 survivor_selection = 'roulette'
 k = 5
+num_islands = 4
+migration_frequency = 5
 tournament_lambda = 2
 survivor_lambda = 120
 n_parents = 2
 n_offspring = 2
 experiment_name = 'optimization_test'
 evolve = Evolve(experiment_name, n_hidden_neurons, population_size, generations, mutation_probability, recombination, survivor_selection, k, n_parents, n_offspring, tournament_lambda, survivor_lambda)
-evolve.run()
+evolve.run(migration_frequency)
