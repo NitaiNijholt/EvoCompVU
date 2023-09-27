@@ -6,7 +6,7 @@ import sys
 
 class Evolve:
 
-    def __init__(self, experiment_name, n_hidden_neurons, population_size, generations, mutation_probability, mutation_sigma, recombination, survivor_selection, k, n_parents, n_offspring, tournament_lambda, survivor_lambda, sharing_alpha, sharing_sigma, enemy=8, parent_selection):
+    def __init__(self, experiment_name, n_hidden_neurons, population_size, generations, mutation_probability, mutation_sigma, recombination, survivor_selection, parent_selection, k, n_parents, n_offspring, tournament_lambda, survivor_lambda, sharing_alpha, sharing_sigma, enemy=8):
         self.env = Environment(experiment_name=experiment_name,
                   enemies=[enemy],
                   playermode="ai",
@@ -46,7 +46,7 @@ class Evolve:
 
     def initialize(self):
         if self.survivor_mode != 'lambda,mu':
-            self.survivor_lambda = 100
+            self.survivor_lambda = self.population_size
         return np.random.uniform(self.dom_l, self.dom_u, (self.population_size, self.n_vars))
 
     # Runs simulation, returns fitness f
@@ -94,8 +94,6 @@ class Evolve:
         
         return similarity
 
-
-
     # evaluation
     def get_fitness(self, population=None, fitness_sharing=True):
         """Calculate the fitness of individuals in a population based on the simulation results. 
@@ -110,25 +108,23 @@ class Evolve:
         """
         if population is None:
             population = self.population
-        # Check if the provided population is a numpy array
-        if type(population) == np.ndarray:
-            # Calculate the fitness for each individual in the provided population using the simulation method
-            fitness = np.array([self.simulation(individual) for individual in population])
-        else:
-            # Calculate the fitness for each individual in the default population using the simulation method
-            fitness = np.array([self.simulation(individual) for individual in self.population])
 
+        # Calculate the fitness for each individual in the provided population using the simulation method
+        fitness = np.array([self.simulation(individual) for individual in population])
 
         # If fitness sharing is enabled
         if fitness_sharing:
             # Initialize a zero vector to store the cumulative similarity scores for each individual
-            similarity_vector = np.zeros(fitness.shape[0])
+            similarity_vector = np.zeros(len(population))
             # Loop through each individual in the population
+
             for index, individual_1 in enumerate(population):
-                commulative_similarity = 0  # Initialize cumulative similarity for the current individual
+
+                commulative_similarity = 0.0001  # Initialize cumulative similarity for the current individual
                 
                 # Calculate the similarity score of the current individual with every other individual in the population
                 for individual_2 in population:
+
                     commulative_similarity += self.share(self.similarity_score(individual_1, individual_2))
                 
                 # Store the cumulative similarity score for the current individual
@@ -136,11 +132,12 @@ class Evolve:
             
             # Adjust the fitness of each individual based on its cumulative similarity score
             fitness_shared = fitness/similarity_vector
+
             return fitness_shared
+
         return fitness
 
-# maybe add k to the input arguments of tournament
-    def tournament(self, population=None, k=5):
+    def tournament(self, population=None, k=5, continuous=False, selected=None):
         '''
         Implements the tournament selection algorithm. 
         It draws randomly with replacement k individuals and returns the fittest tournament_lamba individuals.
@@ -148,71 +145,46 @@ class Evolve:
         if population is None:
             population = self.population
         
-        if self.parent_selection == 'tournament':
-            # Select k random indexes from the population
+        if continuous:
+
+             # Select k random indexes from the population
             k_indexes = np.random.randint(0, len(self.population), k)
             selected_individuals = np.array([self.population[index] for index in k_indexes])
 
-            # Compute the fitness of the selected individuals
-            fitness_of_individuals = self.fitness_population[k_indexes]
+            # Run over k individuals
+            fitness_of_individuals = []
+            for individual in selected_individuals:
+
+                index = len(selected)
+
+                # Make temporary list with the already selected individuals plus the randomly selected new individual
+                tmp = [individual] + selected 
+
+                # Calculate fitness of new individual according to fitness sharing with the already selected population
+                # We only want to save the fitness of the newly selected one, therefore [index]
+                fitness = self.get_fitness(tmp)[index]
+                fitness_of_individuals.append(fitness)
 
             # Sort the individuals based on their fitness
             sorted_indices = np.argsort(fitness_of_individuals)[::-1]
 
             # Get the lambda best individuals
             return [selected_individuals[i] for i in sorted_indices[:self.tournament_lambda]]
+
         
-        
-        
-        elif self.survivor_mode == 'continuous update tournament':
+        else:
+            # Select k random indexes from the population
+            k_indexes = np.random.randint(0, len(population), k)
+            selected_individuals = np.array([population[index] for index in k_indexes])
 
+            # Compute the fitness of the selected individuals
+            fitness_of_individuals = self.get_fitness(selected_individuals)
 
+            # Sort the individuals based on their fitness
+            sorted_indices = np.argsort(fitness_of_individuals)[::-1]
 
-             # Select k random indexes from the population
-            k_indexes = np.random.randint(0, len(self.population), k)
-            selected_individuals = np.array([self.population[index] for index in k_indexes])
-
-
-            for individual in range(len(selected_individuals)):
-                fitness_of_individual = self.get_fitness(self.offspring)
-
-                fitness_of_individuals += fitness_of_individual
-
-            # # Compute the fitness of the selected individuals
-            # fitness_of_individuals = self.fitness_population[k_indexes]
-
-            # # Sort the individuals based on their fitness
-            # sorted_indices = np.argsort(fitness_of_individuals)[::-1]
-
-            # # Get the lambda best individuals
-            # return [selected_individuals[i] for i in sorted_indices[:self.tournament_lambda]]
-
-
-
-            # k_indexes = np.random.randint(0, len(self.population), k)
-            # next_generation = []
-            # for index in k_indexes:
-            #     selected_individuals += self.population[index]
-            #     fitness_of_individual = self.get_fitness(selected_individuals)
-            #     fitness_of_individuals += fitness_of_individual
-                
-                
-            #                # Select k random indexes from the population
-            # k_indexes = np.random.randint(0, len(self.population), k)
-            # selected_individuals = np.array([self.population[index] for index in k_indexes])
-
-            # # Compute the fitness of the selected individuals
-            # for individual in range(len(selected_individuals)):
-
-
-
-            # fitness_of_individuals = self.fitness_population[k_indexes]
-
-            # # Sort the individuals based on their fitness
-            # sorted_indices = np.argsort(fitness_of_individuals)[::-1]
-
-            # # Get the lambda best individuals
-            # return [selected_individuals[i] for i in sorted_indices[:self.tournament_lambda]]
+            # Get the lambda best individuals
+            return [selected_individuals[i] for i in sorted_indices[:self.tournament_lambda]]
 
         
     # limits
@@ -240,70 +212,29 @@ class Evolve:
         for individual in offspring:
             alpha = np.random.uniform(-0.25, 1.25)
             for i in range(len(individual)):
-                individual[i] = mating_pool[0][i] + alpha * (mating_pool[0][i] - mating_pool[1][i])
+                individual[i] = mating_pool[0][i] + alpha * (mating_pool[1][i] - mating_pool[0][i])
         return offspring
 
     def reproduce(self):
         total_offspring = []
 
-
-
-        if self.parent_selection == 'tournament':
-            # Loop over number of reproductions
-            for reproduction in range(int(self.survivor_lambda / 100 * len(self.population) / self.n_offspring)):
-
-                # Make mating pool according to tournament selection
-                mating_pool = np.array([self.tournament()[j] for _ in range(int(self.n_parents / self.tournament_lambda)) for j in range(self.tournament_lambda)])
-
-                offspring =  np.zeros((self.n_offspring, self.n_vars))
-
-                if self.recombination == 'uniform':
-                    offspring = self.uniform_crossover(mating_pool, offspring)
-                elif self.recombination == 'line':
-                    offspring = self.line_recombination(mating_pool, offspring)
-
-                for individual in offspring:
-                    # Mutates and ensures no weight is outside the range [-1, 1]
-                    individual = self.mutate(individual)
-                    individual = [self.limits(weight) for weight in individual]
-                    total_offspring.append(individual)
-                    # adding offspring as a class variable
-                    self.offspring = np.array(total_offspring)
-
-
-        elif self.parent_selection == 'roulette':
-
-            fitness_offspring = self.get_fitness(self.offspring)
-            fitness_population = self.get_fitness(self.population)
-            
-            # Add offspring to existing population. Population size is now much bigger
-            self.population = np.vstack((self.population, offspring))
-            self.fitness_population = np.append(self.fitness_population, fitness_offspring)
-
-            # Find individual with the best fitness
-            self.best = np.argmax(self.fitness_population)
-
-            # Avoiding negative probabilities, as fitness is ranges from negative numbers
-            fitness_population_normalized = np.array([self.norm(fitness_individual) for fitness_individual in self.fitness_population])
-
-            # Calculate probability of surviving generation according to fitness individuals
-            probs = fitness_population_normalized/sum(fitness_population_normalized)
-
-            # Pick population_size individuals at random, weighted according to their fitness
-            chosen = np.random.choice(len(self.population), self.population_size, p=probs, replace=False)
-
-            # Delete first individual and replace it with the best individual. This raises the average fitness, as the best individual probably already was in the selection made, and now has a clone in the population
-            chosen = np.append(chosen[1:], self.best)
-
-            # Delete individuals in population which were not selected above
-            self.population = self.population[chosen]
-            self.fitness_population = self.fitness_population[chosen]
-
         # Loop over number of reproductions
         for reproduction in range(int(self.survivor_lambda / self.population_size * len(self.population) / self.n_offspring)):
 
-            # Make mating pool according to tournament selection
-            mating_pool = np.array([self.tournament()[j] for _ in range(int(self.n_parents / self.tournament_lambda)) for j in range(self.tournament_lambda)])
+            if self.parent_selection == 'tournament':
+                # Make mating pool according to tournament selection
+                mating_pool = np.array([self.tournament()[j] for _ in range(int(self.n_parents / self.tournament_lambda)) for j in range(self.tournament_lambda)])
+
+            elif self.parent_selection == 'roulette':
+                
+                # Avoiding negative probabilities, as fitness is ranges from negative numbers
+                fitness_population_normalized = np.array([self.norm(fitness_individual) for fitness_individual in self.fitness_population])
+
+                # Calculate probability of surviving generation according to fitness individuals
+                probs = fitness_population_normalized/sum(fitness_population_normalized)
+
+                # Pick population_size individuals at random, weighted according to their fitness
+                mating_pool = self.population[np.random.choice(self.population_size, self.n_parents, p=probs, replace=False)]
 
             offspring =  np.zeros((self.n_offspring, self.n_vars))
 
@@ -317,6 +248,7 @@ class Evolve:
                 individual = self.mutate(individual)
                 individual = [self.limits(weight) for weight in individual]
                 total_offspring.append(individual)
+
 
         return np.array(total_offspring)
         
@@ -362,15 +294,37 @@ class Evolve:
             # Pick population_size individuals at random, weighted according to their fitness
             chosen = np.random.choice(len(self.population), self.population_size, p=probs, replace=False)
 
-            # Delete first individual and replace it with the best individual. This raises the average fitness, as the best individual probably already was in the selection made, and now has a clone in the population
+            # Elitism
             chosen = np.append(chosen[1:], self.best)
 
             # Delete individuals in population which were not selected above
             self.population = self.population[chosen]
             self.fitness_population = self.fitness_population[chosen]
 
-        # elif self.survivor_mode == 'k-tournament':
+        elif self.survivor_mode == 'k-tournament':
 
+            # Add offspring to existing population. Population size is now much bigger
+            self.population = np.vstack((self.population, offspring))
+            self.fitness_population = np.append(self.fitness_population, fitness_offspring)
+
+            # Find individual with the best fitness
+            self.best = np.argmax(self.fitness_population)
+
+            # Gets filled during next loop
+            new_population = []
+
+            # We need self.population_size / self.tournament_lambda iterations of the tournament function to get offspring the size of self.population_size
+            for i in range(int(self.population_size / self.tournament_lambda)):
+
+                # Get self.tournament_lambda individuals based on the already selected individuals in new_population
+                new_individuals = self.tournament(continuous=True, selected = new_population)
+
+                # Add individual individuals to new_population
+                for i in range(len(new_individuals)):
+                    new_population.append(new_individuals[i])
+
+            self.population = new_population[:-1] + [self.population[self.best]]
+            self.fitness_population = self.get_fitness()
 
 
 
@@ -407,18 +361,18 @@ n_hidden_neurons = 10
 # 'line' or 'uniform'
 recombination = 'line'
 
-# 'lambda,mu' or 'roulette'
+# 'lambda,mu' or 'roulette' or 'k-tournament'
 survivor_selection = 'roulette'
 k = 5
 tournament_lambda = 2
 survivor_lambda = 120
 n_parents = 2
 n_offspring = 2
-parent_selection = 'tournament'
+parent_selection = 'roulette'
 
 sharing_sigma = 1
 sharing_alpha = 1
 
 experiment_name = 'optimization_test'
-evolve = Evolve(experiment_name, n_hidden_neurons, population_size, generations, mutation_probability, mutation_sigma, recombination, survivor_selection, k, n_parents, n_offspring, tournament_lambda, survivor_lambda, sharing_alpha, sharing_sigma, parent_selection)
+evolve = Evolve(experiment_name, n_hidden_neurons, population_size, generations, mutation_probability, mutation_sigma, recombination, survivor_selection, parent_selection, k, n_parents, n_offspring, tournament_lambda, survivor_lambda, sharing_alpha, sharing_sigma)
 evolve.run()
