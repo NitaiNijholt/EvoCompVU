@@ -323,6 +323,7 @@ class Evolve:
                 for i in range(len(new_individuals)):
                     new_population.append(new_individuals[i])
 
+            # Elitism
             self.population = new_population[:-1] + [self.population[self.best]]
             self.fitness_population = self.get_fitness()
 
