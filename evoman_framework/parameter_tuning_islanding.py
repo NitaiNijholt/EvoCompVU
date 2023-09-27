@@ -50,7 +50,7 @@ class Evolve:
 
     def initialize(self):
         if self.survivor_mode != 'lambda,mu':
-            self.survivor_lambda = 100
+            self.survivor_lambda = self.population_size
         return np.random.uniform(self.dom_l, self.dom_u, (self.population_size, self.n_vars))
     
     def migrate(self):
@@ -67,7 +67,13 @@ class Evolve:
 
             # Replace 3 individuals in the next island with migrants
             replace_indices = np.random.choice(self.population_size, self.migration_amount, replace=False)
-            self.islands[next_island][replace_indices] = migrants
+            try:
+                self.islands[next_island][replace_indices] = migrants
+            except IndexError:
+                print(self.islands[next_island])
+                print(replace_indices)
+                print(migrants)
+                sys.exit()
 
             # Update the fitness of the next island after migration
             self.fitness_islands[next_island] = self.get_fitness(self.islands[next_island])
@@ -118,28 +124,39 @@ class Evolve:
 
     def uniform_crossover(self, mating_pool, offspring):
         cross_prop = np.random.uniform()
-        for j in range(len(offspring[0])):
-            if np.random.uniform() < cross_prop:
-                offspring[0][j] = mating_pool[0][j]
-                offspring[1][j] = mating_pool[1][j]
-            else:
-                offspring[0][j] = mating_pool[1][j]
-                offspring[1][j] = mating_pool[0][j]
-
+        try:
+            for j in range(len(offspring[0])):
+                if np.random.uniform() < cross_prop:
+                    offspring[0][j] = mating_pool[0][j]
+                    offspring[1][j] = mating_pool[1][j]
+                else:
+                    offspring[0][j] = mating_pool[1][j]
+                    offspring[1][j] = mating_pool[0][j]
+        except:
+            print(self.population_size, self.recombination, self.survivor_mode, self.k, self.tournament_lambda)
+            print(offspring)
+            print(mating_pool)
+            sys.exit()
         return offspring
     
     def line_recombination(self, mating_pool, offspring):
         for individual in offspring:
             alpha = np.random.uniform(-0.25, 1.25)
-            for i in range(len(individual)):
-                individual[i] = mating_pool[0][i] + alpha * (mating_pool[1][i]-mating_pool[0][i])
+            try:
+                for i in range(len(individual)):
+                    individual[i] = mating_pool[0][i] + alpha * (mating_pool[1][i]-mating_pool[0][i])
+            except IndexError:
+                print(self.population_size, self.recombination, self.survivor_mode, self.k, self.tournament_lambda)
+                print(individual)
+                print(mating_pool)
+                sys.exit()
         return offspring
 
     def reproduce(self):
         total_offspring = []
 
         # Loop over number of reproductions
-        for reproduction in range(int(self.survivor_lambda / 100 * len(self.population) / self.n_offspring)):
+        for reproduction in range(int(self.survivor_lambda / self.population_size * len(self.population) / self.n_offspring)):
 
             # Make mating pool according to tournament selection
             mating_pool = np.array([self.tournament()[j] for _ in range(int(self.n_parents / self.tournament_lambda)) for j in range(self.tournament_lambda)])
@@ -208,11 +225,6 @@ class Evolve:
 
     def run(self):
 
-        # Initialize islands and their fitness values
-        self.num_islands = 5  # Example: 5 islands
-        self.islands = [self.initialize() for _ in range(self.num_islands)]
-        self.fitness_islands = [self.get_fitness(island) for island in self.islands]
-
         self.env.state_to_log() 
         ini_g = 0
         # print(f"GENERATION {ini_g} {round(self.fitness_population[self.best], 6)} {round(self.mean, 6)} {round(self.std, 6)}")
@@ -238,11 +250,11 @@ class Evolve:
                 self.islands[j] = self.population
                 self.fitness_islands[j] = self.fitness_population
 
-                print(f"ISLAND {j} - GENERATION {i} {round(self.fitness_population[self.best], 6)} {round(self.mean, 6)} {round(self.std, 6)}")
+                # print(f"ISLAND {j} - GENERATION {i} {round(self.fitness_population[self.best], 6)} {round(self.mean, 6)} {round(self.std, 6)}")
 
             # Migration between islands
             if i % self.migration_frequency == 0:
-                print("Migration this generation")
+                print(f"{i}, Migration this generation")
                 self.migrate()
 
         # Combine all islands into a single population at the end 
@@ -253,22 +265,22 @@ class Evolve:
 
 def objective(trial):
     # Sample parameters
-    population_size = trial.suggest_int('population_size', 50, 200)
-    generations = trial.suggest_int('generations', 10, 100)
-    mutation_probability = trial.suggest_float('mutation_probability', 0.1, 0.5)
-    n_hidden_neurons = trial.suggest_int('n_hidden_neurons', 5, 20)
+    population_size = trial.suggest_int('population_size', 50, 80)
+    generations = trial.suggest_int('generations', 10, 11)
+    mutation_probability = trial.suggest_float('mutation_probability', 0.01, 0.5)
     recombination = trial.suggest_categorical('recombination', ['line', 'uniform'])
     survivor_selection = trial.suggest_categorical('survivor_selection', ['lambda,mu', 'roulette'])
     k = trial.suggest_int('k', 3, 10)
-    tournament_lambda = trial.suggest_int('tournament_lambda', 1, 5)
+    tournament_lambda = trial.suggest_int('tournament_lambda', 1, 2)
     survivor_lambda = trial.suggest_int('survivor_lambda', 100, 150)
-    n_parents = trial.suggest_int('n_parents', 1, 5)
     n_offspring = trial.suggest_int('n_offspring', 1, 5)
     migration_frequency = trial.suggest_int('migration_frequency', 1, 5)
     migration_amount = trial.suggest_int('migration_amount', 1, 5)
-    num_islands = trial.suggest_int('num_islands', 2, 10)
+    num_islands = trial.suggest_int('num_islands', 2, 3)
     experiment_name = 'optimization_test'
 
+    n_hidden_neurons = 10
+    n_parents = 2
     # Run your evolutionary algorithm with the sampled parameters
     evolve = Evolve(experiment_name, n_hidden_neurons, population_size, generations, mutation_probability, recombination, survivor_selection, k, n_parents, n_offspring, tournament_lambda, survivor_lambda, migration_frequency, migration_amount, num_islands)
     evolve.run()
