@@ -75,7 +75,7 @@ def lineplot(data1, data2):
             avg_means = [np.mean(gen['avg']) for gen in data[enemy]]
             avg_stds = [np.std(gen['avg']) for gen in data[enemy]]
             avg_stderr = [stats.sem(gen['avg']) for gen in data[enemy]]
-            avg_ci = [1.96 * stderr / np.sqrt(len(data[enemy])) for stderr in avg_stderr]
+            avg_ci = [1.96 * stderr / np.sqrt(len(data[enemy])) for stderr in avg_stderr] # TODO assumes gaussian distr
             
             plt.plot(gen_numbers, best_means, label=f'{label_prefix}max')
             plt.plot(gen_numbers, avg_means, label=f'{label_prefix}mean')
