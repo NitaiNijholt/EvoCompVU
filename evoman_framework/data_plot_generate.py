@@ -22,7 +22,6 @@ def train(enemies, network_file, data_file, runs=10):
     network_file: place where we save our best individual
     data_file: place where we save the avg and best results per generation for all runs for plotting
     runs: the amount of runs that should be done (10!)
-
     '''
     # Check that network_file and data_file are non-existant to avoid overwriting long computing work
     assert not os.path.exists(network_file), f"{network_file} already exists."
@@ -30,7 +29,7 @@ def train(enemies, network_file, data_file, runs=10):
 
     # Parameters:
     os.environ["SDL_VIDEODRIVER"] = "dummy"
-    population_size = 25 # TODO change back to 100
+    population_size = 30 # TODO change back to 100
     generations = 4 # TODO change back to 30
     mutation_probability = 0.2
     mutation_sigma = 0.5
@@ -59,14 +58,17 @@ def train(enemies, network_file, data_file, runs=10):
         for run in range(runs):
 
             # Initialize the evolution algorithm class
-            # FOR fitness sharing:
-            evolve = Evolve(experiment_name, n_hidden_neurons, population_size, generations, mutation_probability,
-                            mutation_sigma, recombination, survivor_selection, k, n_parents, n_offspring, tournament_lambda,
-                            survivor_lambda, sharing_alpha, sharing_sigma, enemy=enemy)
-            # FOR islanding:
-            # evolve =  Evolve(experiment_name, n_hidden_neurons, population_size, generations, mutation_probability,
+            # FOR FITNESS SHARING:
+            # evolve = Evolve(experiment_name, n_hidden_neurons, population_size, generations, mutation_probability,
             #                 mutation_sigma, recombination, survivor_selection, k, n_parents, n_offspring, tournament_lambda,
-            #                 survivor_lambda, enemy=enemy)
+            #                 survivor_lambda, sharing_alpha, sharing_sigma, enemy=enemy)
+            """
+            CHANGE THIS: COMMENT OUT THE RIGHT PART
+            """
+            # FOR ISLANDING:
+            evolve =  Evolve(experiment_name, n_hidden_neurons, population_size, generations, mutation_probability,
+                            mutation_sigma, recombination, survivor_selection, k, n_parents, n_offspring, tournament_lambda,
+                            survivor_lambda, enemy=enemy)
 
             # Run the evolution and get the results for plotting
             best_individual, run_results = evolve.run()
@@ -91,4 +93,7 @@ def train(enemies, network_file, data_file, runs=10):
     with open(network_file, 'w') as nf:
         json.dump(best_individuals, nf)
 
-train([6, 7, 8], 'data_champion_fitnesssharing.txt', 'data_lineplot_fitnesssharing.txt', runs=3)
+"""
+CHANGE THE FILENAME TO THE FILES YOU WANT TO CREATE THIS TIME
+"""
+train([6, 7, 8], 'data_champion_islanding_test.txt', 'data_lineplot_islanding_test.txt', runs=3)

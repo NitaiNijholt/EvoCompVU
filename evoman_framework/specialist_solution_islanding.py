@@ -211,11 +211,18 @@ class Evolve:
 
         self.env.state_to_log() 
         ini_g = 0
+        global_plot_data = {}  # To store plotting stats globally across all islands
 
         # print(f"GENERATION {ini_g} {round(self.fitness_population[self.best], 6)} {round(self.mean, 6)} {round(self.std, 6)}")
 
         for i in range(ini_g + 1, self.generations):
             print(f"GENERATION {i}")
+
+            # Holders for global stats
+            global_best_fitness = float('-inf')
+            global_mean_fitness = []
+            global_std_fitness = []
+
             # Evolution for each island
             for j in range(self.num_islands):
                 self.population = self.islands[j]
@@ -227,24 +234,44 @@ class Evolve:
 
                 self.survivor_selection(offspring, fitness_offspring)
 
-                self.best = np.argmax(self.fitness_population)
-                self.std  =  np.std(self.fitness_population)
-                self.mean = np.mean(self.fitness_population)
+                # For local stats
+                local_best = np.argmax(self.fitness_population)
+                local_std = np.std(self.fitness_population)
+                local_mean = np.mean(self.fitness_population)
 
                 # Update the island and its fitness values
                 self.islands[j] = self.population
                 self.fitness_islands[j] = self.fitness_population
 
-                print(f"ISLAND {j} - GENERATION {i} {round(self.fitness_population[self.best], 6)} {round(self.mean, 6)} {round(self.std, 6)}")
+                print(f"ISLAND {j} - GENERATION {i} {round(self.fitness_population[local_best], 6)} {round(local_mean, 6)} {round(local_std, 6)}")
+
+                # Update global stats
+                global_best_fitness = max(global_best_fitness, self.fitness_population[local_best])
+                global_mean_fitness.append(local_mean)
+                global_std_fitness.append(local_std)
+
+            # Calculate and store the global mean and std deviation for this generation
+            global_mean = np.mean(global_mean_fitness)
+            global_std = np.mean(global_std_fitness)  # You can also use np.std if you prefer
+
+            global_plot_data[i] = (round(global_best_fitness, 6), round(global_mean, 6), round(global_std, 6))
+            print(f"GLOBAL STATS - GENERATION {i} {round(global_best_fitness, 6)} {round(global_mean, 6)} {round(global_std, 6)}")
 
             # Migration between islands
             if i % self.migration_frequency == 0:
                 print("Migration this generation")
                 self.migrate()
 
-        # Combine all islands into a single population at the end 
-        # self.population = np.vstack(self.islands)
-        # self.fitness_population = np.concatenate(self.fitness_islands)
+        # Combine all islands into a single population at the end
+        combined_population = np.vstack(self.islands)
+        combined_fitness = np.concatenate(self.fitness_islands)
+
+        # Get the global best individual and their fitness
+        global_best_index = np.argmax(combined_fitness)
+        global_best_individual = combined_population[global_best_index]
+
+        return ((global_best_individual, round(combined_fitness[global_best_index], 6)), global_plot_data)
+
 
 # Run the code below only when this script is executed, not when imported.
 if __name__ == "__main__":
@@ -252,7 +279,7 @@ if __name__ == "__main__":
     os.environ["SDL_VIDEODRIVER"] = "dummy"
 
     population_size = 128
-    generations = 30
+    generations = 4
     mutation_probability = 0.2
     n_hidden_neurons = 10
     num_islands = 6
