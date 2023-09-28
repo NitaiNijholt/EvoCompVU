@@ -7,7 +7,7 @@ import os
 class Evolve:
     def __init__(self, experiment_name, n_hidden_neurons, population_size, generations, mutation_probability):
         self.env = Environment(experiment_name=experiment_name,
-                  enemies=[3],
+                  enemies=[8],
                   playermode="ai",
                   player_controller=player_controller(n_hidden_neurons),
                   enemymode="static",
