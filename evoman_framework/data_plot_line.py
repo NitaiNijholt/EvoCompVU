@@ -72,18 +72,27 @@ def lineplot(data1, data2):
             gen_numbers = list(range(1, len(data[enemy]) + 1))
             
             best_means = [np.mean(gen['best']) for gen in data[enemy]]
+            best_stds = [np.std(gen['best']) for gen in data[enemy]]
             avg_means = [np.mean(gen['avg']) for gen in data[enemy]]
             avg_stds = [np.std(gen['avg']) for gen in data[enemy]]
             avg_stderr = [stats.sem(gen['avg']) for gen in data[enemy]]
-            avg_ci = [1.96 * stderr / np.sqrt(len(data[enemy])) for stderr in avg_stderr] # TODO assumes gaussian distr
+            # avg_ci = [1.96 * stderr / np.sqrt(len(data[enemy])) for stderr in avg_stderr] # TODO assumes gaussian distr
             
-            plt.plot(gen_numbers, best_means, label=f'{label_prefix}max')
-            plt.plot(gen_numbers, avg_means, label=f'{label_prefix}mean')
+            line1, = plt.plot(gen_numbers, best_means, label=f'{label_prefix}max')
+            line2, = plt.plot(gen_numbers, avg_means, label=f'{label_prefix}mean')
             
+            # changed to std
             plt.fill_between(gen_numbers, 
-                             [mean - ci for mean, ci in zip(avg_means, avg_ci)], 
-                             [mean + ci for mean, ci in zip(avg_means, avg_ci)], 
-                             alpha=0.2)
+                             [mean - std for mean, std in zip(avg_means, avg_stds)], 
+                             [mean + std for mean, std in zip(avg_means, avg_stds)], 
+                             alpha=0.2, color=line2.get_color())
+            
+            # added shaded area next to best
+            plt.fill_between(gen_numbers, 
+                             [mean - std for mean, std in zip(best_means, best_stds)], 
+                             [mean + std for mean, std in zip(best_means, best_stds)], 
+                             alpha=0.2, color=line1.get_color())
+            
         
         plt.title(f"Enemy {enemy}")
         plt.xlabel('Generation')
