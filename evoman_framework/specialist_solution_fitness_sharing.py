@@ -6,7 +6,7 @@ import sys
 
 class Evolve:
 
-    def __init__(self, experiment_name, n_hidden_neurons, population_size, generations, mutation_probability, mutation_sigma, recombination, survivor_selection, k, n_parents, n_offspring, tournament_lambda, survivor_lambda, sharing_alpha, sharing_sigma, enemy=8):
+    def __init__(self, experiment_name, n_hidden_neurons, population_size, generations, mutation_probability, mutation_sigma, recombination, survivor_selection, parent_selection, k, n_parents, n_offspring, tournament_lambda, survivor_lambda, sharing_alpha, sharing_sigma, enemy=8):
         self.env = Environment(experiment_name=experiment_name,
                   enemies=[enemy],
                   playermode="ai",
@@ -23,6 +23,7 @@ class Evolve:
         self.survivor_lambda = survivor_lambda
         self.recombination = recombination
         self.survivor_mode = survivor_selection
+        self.parent_selection = parent_selection
         self.k = k
         self.n_parents = n_parents
         self.n_offspring = n_offspring
@@ -144,7 +145,7 @@ class Evolve:
         '''
         
         # Select k random indexes from the population
-        k_indexes = np.random.randint(0, len(self.population), k)
+        k_indexes = np.random.randint(0, len(self.population), self.k)
         selected_individuals = np.array([self.population[index] for index in k_indexes])
 
         # Compute the fitness of the selected individuals
@@ -190,8 +191,20 @@ class Evolve:
         # Loop over number of reproductions
         for reproduction in range(int(self.survivor_lambda / self.population_size * len(self.population) / self.n_offspring)):
 
-            # Make mating pool according to tournament selection
-            mating_pool = np.array([self.tournament()[j] for _ in range(int(self.n_parents / self.tournament_lambda)) for j in range(self.tournament_lambda)])
+            if self.parent_selection == 'tournament':
+                # Make mating pool according to tournament selection
+                mating_pool = np.array([self.tournament()[j] for _ in range(int(self.n_parents / self.tournament_lambda)) for j in range(self.tournament_lambda)])
+
+            elif self.parent_selection == 'roulette':
+                
+                # Avoiding negative probabilities, as fitness is ranges from negative numbers
+                fitness_population_normalized = np.array([self.norm(fitness_individual) for fitness_individual in self.fitness_population])
+
+                # Calculate probability of surviving generation according to fitness individuals
+                probs = fitness_population_normalized/sum(fitness_population_normalized)
+
+                # Pick population_size individuals at random, weighted according to their fitness
+                mating_pool = self.population[np.random.choice(self.population_size, self.n_parents, p=probs, replace=False)]
 
             offspring =  np.zeros((self.n_offspring, self.n_vars))
 
@@ -288,6 +301,9 @@ recombination = 'line'
 
 # 'lambda,mu' or 'roulette'
 survivor_selection = 'roulette'
+
+# 'roulette' or 'tournament'
+parent_selection = 'roulette'
 k = 5
 tournament_lambda = 2
 survivor_lambda = 120
@@ -298,5 +314,5 @@ sharing_sigma = 1
 sharing_alpha = 1
 
 experiment_name = 'optimization_test'
-evolve = Evolve(experiment_name, n_hidden_neurons, population_size, generations, mutation_probability, mutation_sigma, recombination, survivor_selection, k, n_parents, n_offspring, tournament_lambda, survivor_lambda, sharing_alpha, sharing_sigma)
+evolve = Evolve(experiment_name, n_hidden_neurons, population_size, generations, mutation_probability, mutation_sigma, recombination, survivor_selection, parent_selection, k, n_parents, n_offspring, tournament_lambda, survivor_lambda, sharing_alpha, sharing_sigma)
 evolve.run()
