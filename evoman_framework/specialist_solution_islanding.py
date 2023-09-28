@@ -248,24 +248,26 @@ class Evolve:
         # self.population = np.vstack(self.islands)
         # self.fitness_population = np.concatenate(self.fitness_islands)
 
+# Run the code below only when this script is executed, not when imported.
+if __name__ == "__main__":
 
-os.environ["SDL_VIDEODRIVER"] = "dummy"
-population_size = 100
-generations = 30
-mutation_probability = 0.2
-mutation_sigma = 0.5
-n_hidden_neurons = 10
+    os.environ["SDL_VIDEODRIVER"] = "dummy"
+    population_size = 100
+    generations = 30
+    mutation_probability = 0.2
+    mutation_sigma = 0.5
+    n_hidden_neurons = 10
 
-# 'line' or 'uniform'
-recombination = 'line'
+    # 'line' or 'uniform'
+    recombination = 'line'
 
-# 'lambda,mu' or 'roulette'
-survivor_selection = 'roulette'
-k = 5
-tournament_lambda = 2
-survivor_lambda = 120
-n_parents = 2
-n_offspring = 2
-experiment_name = 'optimization_test'
-evolve = Evolve(experiment_name, n_hidden_neurons, population_size, generations, mutation_probability, mutation_sigma, recombination, survivor_selection, k, n_parents, n_offspring, tournament_lambda, survivor_lambda)
-evolve.run()
+    # 'lambda,mu' or 'roulette'
+    survivor_selection = 'roulette'
+    k = 5
+    tournament_lambda = 2
+    survivor_lambda = 120
+    n_parents = 2
+    n_offspring = 2
+    experiment_name = 'optimization_test'
+    evolve = Evolve(experiment_name, n_hidden_neurons, population_size, generations, mutation_probability, mutation_sigma, recombination, survivor_selection, k, n_parents, n_offspring, tournament_lambda, survivor_lambda)
+    evolve.run()
