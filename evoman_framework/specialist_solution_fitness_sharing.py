@@ -44,7 +44,7 @@ class Evolve:
 
     def initialize(self):
         if self.survivor_mode != 'lambda,mu':
-            self.survivor_lambda = 100
+            self.survivor_lambda = self.population_size
         return np.random.uniform(self.dom_l, self.dom_u, (self.population_size, self.n_vars))
 
     # Runs simulation, returns fitness f
@@ -55,7 +55,6 @@ class Evolve:
     # normalizes
     def norm(self, fitness_individual):
         return max(0.0000000001, (fitness_individual - min(self.fitness_population)) / (max(self.fitness_population) - min(self.fitness_population)))
-
 
     def similarity_score(self, individual1, individual2):
         '''
@@ -145,7 +144,7 @@ class Evolve:
         '''
         
         # Select k random indexes from the population
-        k_indexes = np.random.randint(0, len(self.population), self.k)
+        k_indexes = np.random.randint(0, len(self.population), k)
         selected_individuals = np.array([self.population[index] for index in k_indexes])
 
         # Compute the fitness of the selected individuals
@@ -182,14 +181,14 @@ class Evolve:
         for individual in offspring:
             alpha = np.random.uniform(-0.25, 1.25)
             for i in range(len(individual)):
-                individual[i] = mating_pool[0][i] + alpha * (mating_pool[0][i] - mating_pool[1][i])
+                individual[i] = mating_pool[0][i] + alpha * (mating_pool[1][i] - mating_pool[0][i])
         return offspring
 
     def reproduce(self):
         total_offspring = []
 
         # Loop over number of reproductions
-        for reproduction in range(int(self.survivor_lambda / 100 * len(self.population) / self.n_offspring)):
+        for reproduction in range(int(self.survivor_lambda / self.population_size * len(self.population) / self.n_offspring)):
 
             # Make mating pool according to tournament selection
             mating_pool = np.array([self.tournament()[j] for _ in range(int(self.n_parents / self.tournament_lambda)) for j in range(self.tournament_lambda)])
@@ -260,8 +259,6 @@ class Evolve:
 
         self.env.state_to_log() 
         ini_g = 0
-
-        plot_data = {1: (round(self.fitness_population[self.best], 6), round(self.mean, 6), round(self.std, 6))}
         print(f"GENERATION {ini_g} {round(self.fitness_population[self.best], 6)} {round(self.mean, 6)} {round(self.std, 6)}")
 
         for i in range(ini_g + 1, self.generations):
@@ -276,36 +273,30 @@ class Evolve:
             self.std  =  np.std(self.fitness_population)
             self.mean = np.mean(self.fitness_population)
 
-            plot_data[i+1] = (round(self.fitness_population[self.best], 6), round(self.mean, 6), round(self.std, 6))
             print(f"GENERATION {i} {round(self.fitness_population[self.best], 6)} {round(self.mean, 6)} {round(self.std, 6)}")
-        
-        # Return best individual with their fitness score
-        return ((self.population[self.best], round(self.fitness_population[self.best])), plot_data)
 
-# Run the code below only when this script is executed, not when imported.
-if __name__ == "__main__":
 
-    os.environ["SDL_VIDEODRIVER"] = "dummy"
-    population_size = 100
-    generations = 30
-    mutation_probability = 0.2
-    mutation_sigma = 0.5
-    n_hidden_neurons = 10
+os.environ["SDL_VIDEODRIVER"] = "dummy"
+population_size = 100
+generations = 100
+mutation_probability = 0.2
+mutation_sigma = 0.5
+n_hidden_neurons = 10
 
-    # 'line' or 'uniform'
-    recombination = 'line'
+# 'line' or 'uniform'
+recombination = 'line'
 
-    # 'lambda,mu' or 'roulette'
-    survivor_selection = 'roulette'
-    k = 5
-    tournament_lambda = 2
-    survivor_lambda = 120
-    n_parents = 2
-    n_offspring = 2
+# 'lambda,mu' or 'roulette'
+survivor_selection = 'roulette'
+k = 5
+tournament_lambda = 2
+survivor_lambda = 120
+n_parents = 2
+n_offspring = 2
 
-    sharing_sigma = 1
-    sharing_alpha = 1
+sharing_sigma = 1
+sharing_alpha = 1
 
-    experiment_name = 'optimization_test'
-    evolve = Evolve(experiment_name, n_hidden_neurons, population_size, generations, mutation_probability, mutation_sigma, recombination, survivor_selection, k, n_parents, n_offspring, tournament_lambda, survivor_lambda, sharing_alpha, sharing_sigma)
-    evolve.run()
+experiment_name = 'optimization_test'
+evolve = Evolve(experiment_name, n_hidden_neurons, population_size, generations, mutation_probability, mutation_sigma, recombination, survivor_selection, k, n_parents, n_offspring, tournament_lambda, survivor_lambda, sharing_alpha, sharing_sigma)
+evolve.run()
