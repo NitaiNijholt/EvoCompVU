@@ -292,12 +292,13 @@ from optuna.visualization import plot_optimization_history
 from optuna.visualization import plot_parallel_coordinate
 from optuna.visualization import plot_slice
 
-fig = plot_optimization_history(study)
-fig2 = plot_parallel_coordinate(study)
-fig3 = plot_slice(study)
-fig.show()
-fig2.show()
-fig3.show()
+# Visualize the optuna if you want, mighht need to show the fig for longer
+# fig = plot_optimization_history(study)
+# fig2 = plot_parallel_coordinate(study)
+# fig3 = plot_slice(study)
+# fig.show()
+# fig2.show()
+# fig3.show()
 
 # os.environ["SDL_VIDEODRIVER"] = "dummy"
 # population_size = 100
