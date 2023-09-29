@@ -3,6 +3,7 @@ from demo_controller import player_controller
 import numpy as np
 import os
 import sys
+import optuna
 
 class Evolve:
 
@@ -272,8 +273,6 @@ class Evolve:
 
         self.env.state_to_log() 
         ini_g = 0
-
-        plot_data = {1: (round(self.fitness_population[self.best], 6), round(self.mean, 6), round(self.std, 6))}
         print(f"GENERATION {ini_g} {round(self.fitness_population[self.best], 6)} {round(self.mean, 6)} {round(self.std, 6)}")
 
         for i in range(ini_g + 1, self.generations):
@@ -288,38 +287,95 @@ class Evolve:
             self.std  =  np.std(self.fitness_population)
             self.mean = np.mean(self.fitness_population)
 
-            plot_data[i+1] = (round(self.fitness_population[self.best], 6), round(self.mean, 6), round(self.std, 6))
             print(f"GENERATION {i} {round(self.fitness_population[self.best], 6)} {round(self.mean, 6)} {round(self.std, 6)}")
-        
-        # Return best individual with their fitness score
-        return ((self.population[self.best], round(self.fitness_population[self.best])), plot_data)
 
-if __name__ == "__main__":
 
-    os.environ["SDL_VIDEODRIVER"] = "dummy"
-    population_size = 100
-    generations = 100
-    mutation_probability = 0.2
-    mutation_sigma = 0.5
-    n_hidden_neurons = 10
 
-    # 'line' or 'uniform'
-    recombination = 'line'
 
-    # 'lambda,mu' or 'roulette'
-    survivor_selection = 'roulette'
-
-    # 'roulette' or 'tournament'
-    parent_selection = 'roulette'
-    k = 5
-    tournament_lambda = 2
-    survivor_lambda = 120
-    n_parents = 2
-    n_offspring = 2
-
-    sharing_sigma = 1
-    sharing_alpha = 1
-
+def objective(trial):
+    # Sample parameters
+    population_size = trial.suggest_int('population_size', 50, 150)
+    mutation_probability = trial.suggest_float('mutation_probability', 0.01, 0.5)
+    recombination = trial.suggest_categorical('recombination', ['line', 'uniform'])
+    parent_selection = trial.suggest_categorical('parent_selection', ['roulette', 'tournament'])
+    survivor_selection = trial.suggest_categorical('survivor_selection', ['lambda,mu', 'roulette'])
+    k = trial.suggest_int('k', 3, 10)
+    tournament_lambda = trial.suggest_int('tournament_lambda', 1, 2)
+    survivor_lambda = trial.suggest_int('survivor_lambda', population_size , 150)
+    # sharing_sigma = trial.suggest_int('migration_frequency', 1, 10)
+    # migration_amount = trial.suggest_int('migration_amount', 1, 20)
+    # num_islands = trial.suggest_int('num_islands', 1, 8)
+    mutation_stepsize = trial.suggest_float('mutation_stepsize', 0.01, 1)
+    sharing_alpha = trial.suggest_int('sharing_alpha', 1, 10)
+    sharing_sigma = trial.suggest_int('sharing_sigma', 1, 10)
     experiment_name = 'optimization_test'
-    evolve = Evolve(experiment_name, n_hidden_neurons, population_size, generations, mutation_probability, mutation_sigma, recombination, survivor_selection, parent_selection, k, n_parents, n_offspring, tournament_lambda, survivor_lambda, sharing_alpha, sharing_sigma)
+
+    n_offspring = 2
+    generations = 30
+    n_hidden_neurons = 10
+    n_parents = 2
+    # Run your evolutionary algorithm with the sampled parameters
+    evolve = Evolve(experiment_name, n_hidden_neurons, population_size, generations, mutation_probability, mutation_stepsize, recombination, survivor_selection, parent_selection, k, n_parents, n_offspring, tournament_lambda, survivor_lambda, sharing_alpha, sharing_sigma)
+    # evolve = Evolve(experiment_name, n_hidden_neurons, population_size, generations, mutation_probability, recombination, survivor_selection, k, n_parents, n_offspring, tournament_lambda, mutation_stepsize)
     evolve.run()
+
+    # Return the negative value of the best fitness (since Optuna tries to minimize the objective)
+    # Adjust this according to your needs
+    return max(evolve.fitness_population)
+
+
+os.environ["SDL_VIDEODRIVER"] = "dummy"
+study = optuna.create_study(direction='maximize')  # or 'maximize' based on your needs
+study.optimize(objective, n_trials=100)  # You can adjust n_trials based on your computational resources
+
+print("Best trial:")
+trial = study.best_trial
+print("Value: ", trial.value)
+print("Params: ")
+for key, value in trial.params.items():
+    print(f"{key}: {value}")
+
+from optuna.visualization import plot_optimization_history
+from optuna.visualization import plot_parallel_coordinate
+from optuna.visualization import plot_slice
+
+figure1 = plot_optimization_history
+figure2 = plot_parallel_coordinate
+figure3 = plot_slice
+
+plot_optimization_history(study)
+plot_parallel_coordinate(study)
+plot_slice(study)
+
+figure1.show()
+figure2.show()
+figure3.show()
+
+
+# os.environ["SDL_VIDEODRIVER"] = "dummy"
+# population_size = 100
+# generations = 30
+# mutation_probability = 0.2
+# # mutation_sigma = 0.5
+# n_hidden_neurons = 10
+
+# # 'line' or 'uniform'
+# recombination = 'line'
+
+# # 'lambda,mu' or 'roulette'
+# survivor_selection = 'roulette'
+
+# # 'roulette' or 'tournament'
+# parent_selection = 'roulette'
+# k = 5
+# tournament_lambda = 2
+# survivor_lambda = 120
+# n_parents = 2
+# n_offspring = 2
+
+# sharing_sigma = 1
+# sharing_alpha = 1
+
+# experiment_name = 'optimization_test'
+# evolve = Evolve(experiment_name, n_hidden_neurons, population_size, generations, mutation_probability, mutation_sigma, recombination, survivor_selection, parent_selection, k, n_parents, n_offspring, tournament_lambda, survivor_lambda, sharing_alpha, sharing_sigma)
+# evolve.run()
