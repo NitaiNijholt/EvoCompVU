@@ -29,7 +29,8 @@ def extract_data(lines):
                 data[current_enemy][gen-1]['avg'].append(avg)
     return data
 
-# Assymetrical CI:
+
+# Assymetrical CI, DONT USE:
 # def bootstrap_ci(data, n_bootstrap=10000, alpha=0.05):
 #     """Calculate the low and high percentiles for a bootstrap confidence interval."""
 #     resamples = [np.random.choice(data, len(data), replace=True).mean() for _ in range(n_bootstrap)]
@@ -63,7 +64,8 @@ def extract_data(lines):
 #         plt.gca().xaxis.set_major_locator(MaxNLocator(integer=True))  # Ensure x-axis ticks are integers
 #         plt.show()
 
-# Symmetrical CI
+
+# Use this:
 def lineplot(data1, data2):
     for enemy in data1.keys():
         plt.figure()
