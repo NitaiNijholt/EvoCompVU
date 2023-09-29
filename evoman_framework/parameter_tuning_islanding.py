@@ -4,6 +4,9 @@ import numpy as np
 import os
 import sys
 import optuna
+import torch
+
+
 
 class Evolve:
 
@@ -242,15 +245,15 @@ class Evolve:
                 self.migrate()
 
         # Combine all islands into a single population at the end 
-        # self.population = np.vstack(self.islands)
-        # self.fitness_population = np.concatenate(self.fitness_islands)
+        self.population = np.vstack(self.islands)
+        self.fitness_population = np.concatenate(self.fitness_islands)
 
 
 
 def objective(trial):
     # Sample parameters
     population_size = trial.suggest_int('population_size', 50, 150)
-    mutation_probability = trial.suggest_float('mutation_probability', 0.01, 0.5)
+    mutation_probability = trial.suggest_float('mutation_probability', 0.01, 0.15)
     recombination = trial.suggest_categorical('recombination', ['line', 'uniform'])
     survivor_selection = trial.suggest_categorical('survivor_selection', ['lambda,mu', 'roulette'])
     k = trial.suggest_int('k', 3, 10)
@@ -289,10 +292,12 @@ from optuna.visualization import plot_optimization_history
 from optuna.visualization import plot_parallel_coordinate
 from optuna.visualization import plot_slice
 
-plot_optimization_history(study)
-plot_parallel_coordinate(study)
-plot_slice(study)
-
+fig = plot_optimization_history(study)
+fig2 = plot_parallel_coordinate(study)
+fig3 = plot_slice(study)
+fig.show()
+fig2.show()
+fig3.show()
 
 # os.environ["SDL_VIDEODRIVER"] = "dummy"
 # population_size = 100
