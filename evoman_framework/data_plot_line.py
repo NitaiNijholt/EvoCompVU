@@ -87,6 +87,7 @@ def lineplot(data1, data2):
             avg_stderr = [stats.sem(gen['avg']) for gen in data[enemy]]
             # avg_ci = [1.96 * stderr / np.sqrt(len(data[enemy])) for stderr in avg_stderr] # TODO assumes gaussian distr
 
+            
             print(len(best_values))
             print(len(best_values[-1]))
             # print(avg_values)
@@ -114,7 +115,9 @@ def lineplot(data1, data2):
             hypothesis_test_per_enemy_mean.append(avg_values[-1])
         hypothesis_tests_avg_total.append(two_sample_ttest(hypothesis_test_per_enemy_mean[0], hypothesis_test_per_enemy_mean[1], alpha = 0.05))
             
-        
+
+
+
         ax.set_title(f"Enemy {enemy}")
         ax.set_xlabel('Generation')
         ax.set_ylabel('Fitness')
@@ -149,4 +152,34 @@ print(testresults)
 # save the results of the statistical tests
 with open('results_statistical_tests_lineplots.txt', 'w') as f:
     json.dump(testresults, f)
+
+
+
+import pandas as pd
+
+def extract_final_statistics(data, method_name):
+    rows = []
+    for enemy, generations in data.items():
+        final_gen = generations[-1]  # get the last generation
+        row = {
+            'Enemy': enemy,
+            'Method': method_name,
+            'Best Mean': np.mean(final_gen['best']),
+            'Best Max': np.max(final_gen['best']),
+            'Avg Mean': np.mean(final_gen['avg']),
+            'Best Mean': np.max(final_gen['avg'])
+        }
+        rows.append(row)
+    return pd.DataFrame(rows)
+
+# Extracting data for both methods
+df_data1 = extract_final_statistics(data1, "Fitness sharing")
+df_data2 = extract_final_statistics(data2, "Islanding")
+
+# Concatenating the two dataframes to get a single dataframe
+final_df = pd.concat([df_data1, df_data2]).reset_index(drop=True)
+
+print(final_df)
+
+
 

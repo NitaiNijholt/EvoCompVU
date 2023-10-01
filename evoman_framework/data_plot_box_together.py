@@ -18,11 +18,11 @@ import json
 CHANGE FILENAMES IN `open()` FUNCTIONS
 """
 # Read files with champions
-with open('data_champion_islanding_final.txt', 'r') as f:
+with open('data_champion_fitness_final.txt', 'r') as f:
     fs_champions = json.load(f)
     # Change enemy number and run number to int and champions to np.arrays
     fs_champions = {int(k): {int(run): np.array(v) for run, v in runs.items()} for k, runs in fs_champions.items()}
-with open('data_lineplot_islanding_final.txt', 'r') as f:
+with open('data_champion_islanding_final.txt', 'r') as f:
     isl_champions = json.load(f)
     # Change enemy number and run number to int and champions to np.arrays
     isl_champions = {int(k): {int(run): np.array(v) for run, v in runs.items()} for k, runs in isl_champions.items()}
@@ -65,22 +65,58 @@ for enemy in isl_champions.keys():
             individual_gain_isl = p - e
             individual_gains[enemy]['isl'].append(individual_gain_isl)
 
+# Create the boxplots
+gains_fitnessharing = [gains['fs'] for gains in individual_gains.values()]
+gains_islanding = [gains['isl'] for gains in individual_gains.values()]
+
+# Create the labels
+
+labels=['Fitness sharing', 'Islanding', 'Fitness sharing', 'Islanding', 'Fitness sharing', 'Islanding']
+
+# Create the combined boxplot
+plt.figure(figsize=(12, 6))
+bp = plt.boxplot([gains_fitnessharing[0],gains_islanding[0],gains_fitnessharing[1],gains_islanding[1],gains_fitnessharing[2],gains_islanding[2]], labels=labels)
+# plt.title("Combined Boxplot for all Enemies", y=1.08)  # Adjust the title's y position
+plt.ylabel('Individual Gain')
+plt.xlabel('EA Algorithm')
+plt.xticks(rotation=45)
+
+# Calculate maximum y value to place enemy labels just above the highest boxplot
+ymax = max([item.get_ydata().max() for item in bp['whiskers']])
+
+# Place the additional labels with increased vertical offset
+enemies = ["Enemy 6", "Enemy 7", "Enemy 8"]
+for i, enemy in enumerate(enemies):
+    plt.text(2*i + 1.5, ymax + 0.1 * ymax, enemy, ha='center', va='center', fontsize=12)  # Increased the vertical offset
+
+plt.tight_layout(rect=[0, 0, 1, 0.95])  # Adjust the vertical spacing
+plt.show()
+
+
+# save the mean and maxes of the individual gains in a txt file per enemt and per algorithm
+with open('results_individual_gains.txt', 'w') as f:
+    # mean and maxes of the individual gains per enemy and per algorithm
+    means = {enemy: {'fs': np.mean(gains['fs']), 'isl': np.mean(gains['isl'])} for enemy, gains in individual_gains.items()}
+    maxes = {enemy: {'fs': np.max(gains['fs']), 'isl': np.max(gains['isl'])} for enemy, gains in individual_gains.items()}
+    json.dump({'means': means, 'maxes': maxes}, f)
 
 
 results_statistical_tests = []
 # Create the boxplots & perform statistical tests
 for enemy, gains in individual_gains.items():
-    plt.figure()
-    plt.boxplot([gains['fs'], gains['isl']], labels=['Fitness sharing', 'Islanding'])
-    plt.title(f"Boxplot for Enemy {enemy}")
     results = two_sample_ttest(gains['fs'], gains['isl'], alpha = 0.05)
-    result_dict = {'enemy': enemy, 't_stat': results[0], 'p_value': np.round(results[1], 6) , 'decision': results[2]}
+    result_dict = {'enemy': enemy, 't_stat': results[0], 'p_value': np.round(results[1], 4) , 'decision': results[2]}
     results_statistical_tests.append(result_dict)
-    plt.ylabel('Individual Gain')
-    plt.xlabel('Algorithm')
-    plt.show()
 
-# # save the results of the statistical tests
-# with open('results_statistical_tests.txt', 'w') as f:
-#     json.dump(results_statistical_tests, f)
+# extract the mean and maxes of the individual gains per enemy and per algorithm
+means = {enemy: {'fs': np.mean(gains['fs']), 'isl': np.mean(gains['isl'])} for enemy, gains in individual_gains.items()}
+maxes = {enemy: {'fs': np.max(gains['fs']), 'isl': np.max(gains['isl'])} for enemy, gains in individual_gains.items()}
+# save the mean and maxes of the individual gains in a txt file per enemy and per algorithm
+with open('results_individual_gains.txt', 'w') as f:
+    json.dump({'means': means, 'maxes': maxes}, f)
+    
 
+
+# save the results of the statistical tests
+with open('results_statistical_tests.txt', 'w') as f:
+    json.dump(results_statistical_tests, f)
