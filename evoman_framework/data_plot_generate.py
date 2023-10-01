@@ -5,6 +5,7 @@ per enemy, but for only one EA at a time.
 
 # Run this file for both our EA variants
 from specialist_solution_fitness_sharing import Evolve
+# from specialist_solution_islanding import Evolve
 
 from evoman.environment import Environment
 from demo_controller import player_controller
@@ -27,10 +28,10 @@ def train(enemies, network_file, data_file, runs=10):
 
     # Parameters:
     os.environ["SDL_VIDEODRIVER"] = "dummy"
-    population_size = 115 # TODO change back to 100
+    population_size = 805 # TODO change back to 100
     generations = 30 # TODO change back to 30
     mutation_probability = 0.043551807574295706
-    mutation_sigma = 0.71803154116932
+    mutation_sigma = 0.718031541166932
     n_hidden_neurons = 10
     # 'line' or 'uniform'
     recombination = 'line'
@@ -46,10 +47,10 @@ def train(enemies, network_file, data_file, runs=10):
     sharing_alpha = 2
     experiment_name = 'optimization_test'
     # Islanding specific:
-    num_islands = 6
-    migration_amount = 14
+    num_islands = 7
+    migration_amount = 9
     migration_frequency = 7
-    mutation_stepsize = 0.215
+    mutation_stepsize = 0.3420204523855799
 
     # Placeholder for storing best individuals and results for plotting
     best_individuals = dict()
@@ -63,9 +64,12 @@ def train(enemies, network_file, data_file, runs=10):
         enemy_results[enemy] = []
 
         for run in range(runs):
-
+            print(run, enemy)
             # Initialize the evolution algorithm class
             # FOR FITNESS SHARING:
+            evolve = Evolve(experiment_name, n_hidden_neurons, population_size, generations, mutation_probability,
+                            mutation_sigma, recombination, survivor_selection, parent_selection, k, n_parents, n_offspring, tournament_lambda,
+                            survivor_lambda, sharing_alpha, sharing_sigma, enemy=enemy)
             evolve = Evolve(experiment_name, n_hidden_neurons, population_size, generations, mutation_probability,
                             mutation_sigma, recombination, survivor_selection, parent_selection, k, n_parents, n_offspring, tournament_lambda,
                             survivor_lambda, sharing_alpha, sharing_sigma, enemy=enemy)

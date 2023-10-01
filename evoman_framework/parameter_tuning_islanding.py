@@ -254,11 +254,9 @@ def objective(trial):
     # Sample parameters
     population_size = trial.suggest_int('population_size', 50, 150)
     mutation_probability = trial.suggest_float('mutation_probability', 0.01, 0.15)
-    recombination = trial.suggest_categorical('recombination', ['line', 'uniform'])
-    survivor_selection = trial.suggest_categorical('survivor_selection', ['lambda,mu', 'roulette'])
     k = trial.suggest_int('k', 3, 10)
     tournament_lambda = trial.suggest_int('tournament_lambda', 1, 2)
-    survivor_lambda = trial.suggest_int('survivor_lambda', population_size , 150)
+    survivor_lambda = population_size
     migration_frequency = trial.suggest_int('migration_frequency', 1, 10)
     migration_amount = trial.suggest_int('migration_amount', 1, 20)
     num_islands = trial.suggest_int('num_islands', 1, 8)
@@ -269,17 +267,21 @@ def objective(trial):
     generations = 30
     n_hidden_neurons = 10
     n_parents = 2
+    recombination = 'line'
     # Run your evolutionary algorithm with the sampled parameters
-    evolve = Evolve(experiment_name, n_hidden_neurons, population_size, generations, mutation_probability, recombination, survivor_selection, k, n_parents, n_offspring, tournament_lambda, survivor_lambda, migration_frequency, migration_amount, num_islands, mutation_stepsize)
+    average = 0
+    evolve = Evolve(experiment_name, n_hidden_neurons, population_size, generations, mutation_probability, recombination, 'roulette', k, n_parents, n_offspring, tournament_lambda, survivor_lambda, migration_frequency, migration_amount, num_islands, mutation_stepsize)
     evolve.run()
-
+    average += max(evolve.fitness_population)/2
     # Return the negative value of the best fitness (since Optuna tries to minimize the objective)
     # Adjust this according to your needs
-    return max(evolve.fitness_population)
-
+    evolve = Evolve(experiment_name, n_hidden_neurons, population_size, generations, mutation_probability, recombination, 'roulette', k, n_parents, n_offspring, tournament_lambda, survivor_lambda, migration_frequency, migration_amount, num_islands, mutation_stepsize)
+    evolve.run()
+    average += max(evolve.fitness_population)/2
+    return average
 os.environ["SDL_VIDEODRIVER"] = "dummy"
 study = optuna.create_study(direction='maximize')  # or 'maximize' based on your needs
-study.optimize(objective, n_trials=100)  # You can adjust n_trials based on your computational resources
+study.optimize(objective, n_trials=30)  # You can adjust n_trials based on your computational resources
 
 print("Best trial:")
 trial = study.best_trial
@@ -293,12 +295,12 @@ from optuna.visualization import plot_parallel_coordinate
 from optuna.visualization import plot_slice
 
 # Visualize the optuna if you want, mighht need to show the fig for longer
-# fig = plot_optimization_history(study)
-# fig2 = plot_parallel_coordinate(study)
-# fig3 = plot_slice(study)
-# fig.show()
-# fig2.show()
-# fig3.show()
+fig = plot_optimization_history(study)
+fig2 = plot_parallel_coordinate(study)
+fig3 = plot_slice(study)
+fig.show()
+fig2.show()
+fig3.show()
 
 # os.environ["SDL_VIDEODRIVER"] = "dummy"
 # population_size = 100
