@@ -70,7 +70,7 @@ def lineplot(data1, data2):
     for enemy in data1.keys():
         plt.figure()
         
-        for data, label_prefix in zip([data1, data2], ["20 pop ", "10 pop "]):
+        for data, label_prefix in zip([data1, data2], [" Fitness sharing", " Islanding"]):
             gen_numbers = list(range(1, len(data[enemy]) + 1))
             
             best_means = [np.mean(gen['best']) for gen in data[enemy]]
@@ -80,8 +80,9 @@ def lineplot(data1, data2):
             avg_stderr = [stats.sem(gen['avg']) for gen in data[enemy]]
             # avg_ci = [1.96 * stderr / np.sqrt(len(data[enemy])) for stderr in avg_stderr] # TODO assumes gaussian distr
             
-            line1, = plt.plot(gen_numbers, best_means, label=f'{label_prefix}max')
-            line2, = plt.plot(gen_numbers, avg_means, label=f'{label_prefix}mean')
+            line1, = plt.plot(gen_numbers, best_means, label=f'{label_prefix} Max')
+            line2, = plt.plot(gen_numbers, avg_means, label=f'{label_prefix} Mean')
+
             
             # changed to std
             plt.fill_between(gen_numbers, 
@@ -104,8 +105,8 @@ def lineplot(data1, data2):
         plt.show()
 
 # Reading and parsing the data from the files
-file1 = 'data_lineplot_fitnesssharing.txt'
-file2 = 'data_lineplot_fitnesssharing2.txt'
+file1 = 'data_lineplot_fitnessharing_115.txt'
+file2 = 'data_lineplot_islanding_test678.txt'
 
 data1 = extract_data(read_file(file1))
 data2 = extract_data(read_file(file2))
