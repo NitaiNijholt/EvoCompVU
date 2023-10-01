@@ -5,6 +5,7 @@ per enemy, but for only one EA at a time.
 
 # Run this file for both our EA variants
 from specialist_solution_fitness_sharing import Evolve
+# from specialist_solution_islanding import Evolve
 
 from evoman.environment import Environment
 from demo_controller import player_controller
@@ -27,28 +28,29 @@ def train(enemies, network_file, data_file, runs=10):
 
     # Parameters:
     os.environ["SDL_VIDEODRIVER"] = "dummy"
-    population_size = 30 # TODO change back to 100
-    generations = 2 # TODO change back to 30
-    mutation_probability = 0.2
-    mutation_sigma = 0.5
+    population_size = 805 # TODO change back to 100
+    generations = 30 # TODO change back to 30
+    mutation_probability = 0.043551807574295706
+    mutation_sigma = 0.718031541166932
     n_hidden_neurons = 10
     # 'line' or 'uniform'
     recombination = 'line'
     # 'lambda,mu' or 'roulette'
     survivor_selection = 'roulette'
-    k = 5
+    k = 3
     tournament_lambda = 2
-    survivor_lambda = 120
+    survivor_lambda = 116
     n_parents = 2
     n_offspring = 2
-    sharing_sigma = 1
-    sharing_alpha = 1
+    sharing_sigma = 2
+    sharing_alpha = 4
+    parent_selection = "roulette"
     experiment_name = 'optimization_test'
     # Islanding specific:
-    num_islands = 6
-    migration_amount = 14
+    num_islands = 7
+    migration_amount = 9
     migration_frequency = 7
-    mutation_stepsize = 0.215
+    mutation_stepsize = 0.3420204523855799
 
     # Placeholder for storing best individuals and results for plotting
     best_individuals = dict()
@@ -62,20 +64,21 @@ def train(enemies, network_file, data_file, runs=10):
         enemy_results[enemy] = []
 
         for run in range(runs):
-
+            print(run, enemy)
             # Initialize the evolution algorithm class
             # FOR FITNESS SHARING:
-            # evolve = Evolve(experiment_name, n_hidden_neurons, population_size, generations, mutation_probability,
-            #                 mutation_sigma, recombination, survivor_selection, k, n_parents, n_offspring, tournament_lambda,
-            #                 survivor_lambda, sharing_alpha, sharing_sigma, enemy=enemy)
+            evolve = Evolve(experiment_name, n_hidden_neurons, population_size, generations, mutation_probability,
+                            mutation_sigma, recombination, survivor_selection, parent_selection, k, n_parents, n_offspring, tournament_lambda,
+                            survivor_lambda, sharing_alpha, sharing_sigma, enemy=enemy)
             """
             CHANGE THIS: COMMENT OUT THE RIGHT PART
             """
             # FOR ISLANDING:
-            evolve =  Evolve(experiment_name, n_hidden_neurons, population_size, generations, mutation_probability,
-                             recombination, survivor_selection, k, n_parents, n_offspring, tournament_lambda,
-                             survivor_lambda, migration_frequency, migration_amount, num_islands, mutation_stepsize,
-                             enemy=enemy)
+            
+            # evolve =  Evolve(experiment_name, n_hidden_neurons, population_size, generations, mutation_probability,
+            #                  recombination, survivor_selection, k, n_parents, n_offspring, tournament_lambda,
+            #                  survivor_lambda, migration_frequency, migration_amount, num_islands, mutation_stepsize,
+            #                  enemy=enemy)
 
             # Run the evolution and get the results for plotting
             best_individual, run_results = evolve.run()
@@ -107,4 +110,4 @@ def train(enemies, network_file, data_file, runs=10):
 """
 CHANGE THE FILENAME TO THE FILES YOU WANT TO CREATE THIS TIME
 """
-train([6, 7, 8], 'data_champion_islanding_test1.txt', 'data_lineplot_islanding_test1.txt', runs=5)
+train([6, 7, 8], 'data_champion_fitness_test678.txt', 'data_lineplot_fitness_test678.txt', runs=10)
