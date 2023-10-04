@@ -3,6 +3,7 @@ from demo_controller import player_controller
 import numpy as np
 import os
 import sys
+import json
 
 class Evolve:
 
@@ -18,6 +19,7 @@ class Evolve:
         
         self.n_hidden_neurons = n_hidden_neurons
         self.n_vars = (self.env.get_num_sensors() + 1) * self.n_hidden_neurons + (self.n_hidden_neurons + 1) * 5
+        self.enemy = enemy
 
         self.tournament_lambda = tournament_lambda
         self.survivor_lambda = survivor_lambda
@@ -271,6 +273,44 @@ class Evolve:
         global_best_individual = combined_population[global_best_index]
 
         return ((global_best_individual, round(combined_fitness[global_best_index], 6)), global_plot_data)
+    
+    def save(self, filename, description):
+        """
+        description: THE MOST IMPORTANT variable, you should always include:
+            - which EA was run
+            - which fitness function was used
+
+        filename: the name of the txt file, doesn't have to end in .txt
+
+        Right now the code presumes just one enemy, when that is changed for the generalist, we are gonna change the code
+        so that it finds all 8 fitness values and saves all of those in the enemy_fitness_dict.
+        """
+        filepath = f"results/{filename}.txt"
+        if filepath[-8:] == '.txt.txt':
+            filepath = filepath[:-4]
+        # Create results directory if it doesn't exist
+        if not os.path.exists('results'):
+            os.makedirs('results')
+        # Check that filename.txt is non-existent to avoid overwriting long computing work
+        assert not os.path.exists(filepath), f"{filepath} already exists."
+
+        # Fetch and compile values that we need from the class variables
+        # Combine all islands into a single population
+        combined_population = np.vstack(self.islands)
+        combined_fitness = np.concatenate(self.fitness_islands)
+        # Get the global best individual and their fitness
+        global_best_index = np.argmax(combined_fitness)
+        best_individual = combined_population[global_best_index]
+        best_fitness = combined_fitness[global_best_index]
+        enemy_fitness_dict = {self.enemy: best_fitness}
+
+        with open(filepath, 'w') as f:
+            # Write the description
+            f.write(f"{description}\n")
+            # Write the best individual
+            f.write(f"{best_individual}\n")
+            # Write the enemy-fitness dictionary
+            f.write(f"{enemy_fitness_dict}\n")
 
 
 # Run the code below only when this script is executed, not when imported.

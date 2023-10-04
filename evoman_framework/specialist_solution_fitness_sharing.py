@@ -18,6 +18,7 @@ class Evolve:
         
         self.n_hidden_neurons = n_hidden_neurons
         self.n_vars = (self.env.get_num_sensors() + 1) * self.n_hidden_neurons + (self.n_hidden_neurons + 1) * 5
+        self.enemy = enemy
 
         self.tournament_lambda = tournament_lambda
         self.survivor_lambda = survivor_lambda
@@ -293,6 +294,36 @@ class Evolve:
         
         # Return best individual with their fitness score
         return ((self.population[self.best], round(self.fitness_population[self.best])), plot_data)
+    
+    def save(self, filename, description):
+        """
+        description: THE MOST IMPORTANT variable, you should always include:
+            - which EA was run
+            - which fitness function was used
+
+        filename: the name of the txt file, doesn't have to end in .txt
+
+        Right now the code presumes just one enemy, when that is changed for the generalist, we are gonna change the code
+        so that it finds all 8 fitness values and saves all of those in the enemy_fitness_dict.
+        """
+        filepath = f"results/{filename}.txt"
+        if filepath[-8:] == '.txt.txt':
+            filepath = filepath[:-4]
+        # Create results directory if it doesn't exist
+        if not os.path.exists('results'):
+            os.makedirs('results')
+        # Check that filename.txt is non-existent to avoid overwriting long computing work
+        assert not os.path.exists(filepath), f"{filepath} already exists."
+
+        with open(filepath, 'w') as f:
+            # Write the description
+            f.write(f"{description}\n")
+            # Write the best individual
+            f.write(f"{self.population[self.best]}\n")
+            # Write the enemy-fitness dictionary
+            enemy_fitness_dict = {self.enemy: self.fitness_population[self.best]}
+            f.write(f"{enemy_fitness_dict}\n")
+
 
 if __name__ == "__main__":
 
