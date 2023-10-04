@@ -27,7 +27,7 @@ env = Environment(experiment_name=experiment_name,
 				  visuals=True)
 
 # Read files with champion
-with open('data_champion_fitnesssharing.txt', 'r') as f: 
+with open('champions/data_champion_fitnesssharing.txt', 'r') as f: 
     fs_champions = json.load(f)
     # Change enemy number to int and champions to np.arrays, important as json makes it a list!!
     champ = np.array(fs_champions['7'])

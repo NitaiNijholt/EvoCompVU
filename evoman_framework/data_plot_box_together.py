@@ -18,11 +18,11 @@ import json
 CHANGE FILENAMES IN `open()` FUNCTIONS
 """
 # Read files with champions
-with open('data_champion_fitness_final.txt', 'r') as f:
+with open('champions/data_champion_fitness_final.txt', 'r') as f:
     fs_champions = json.load(f)
     # Change enemy number and run number to int and champions to np.arrays
     fs_champions = {int(k): {int(run): np.array(v) for run, v in runs.items()} for k, runs in fs_champions.items()}
-with open('data_champion_islanding_final.txt', 'r') as f:
+with open('champions/data_champion_islanding_final.txt', 'r') as f:
     isl_champions = json.load(f)
     # Change enemy number and run number to int and champions to np.arrays
     isl_champions = {int(k): {int(run): np.array(v) for run, v in runs.items()} for k, runs in isl_champions.items()}
@@ -94,7 +94,7 @@ plt.show()
 
 
 # save the mean and maxes of the individual gains in a txt file per enemt and per algorithm
-with open('results_individual_gains.txt', 'w') as f:
+with open('results/results_individual_gains.txt', 'w') as f:
     # mean and maxes of the individual gains per enemy and per algorithm
     means = {enemy: {'fs': np.mean(gains['fs']), 'isl': np.mean(gains['isl'])} for enemy, gains in individual_gains.items()}
     maxes = {enemy: {'fs': np.max(gains['fs']), 'isl': np.max(gains['isl'])} for enemy, gains in individual_gains.items()}
@@ -112,11 +112,11 @@ for enemy, gains in individual_gains.items():
 means = {enemy: {'fs': np.mean(gains['fs']), 'isl': np.mean(gains['isl'])} for enemy, gains in individual_gains.items()}
 maxes = {enemy: {'fs': np.max(gains['fs']), 'isl': np.max(gains['isl'])} for enemy, gains in individual_gains.items()}
 # save the mean and maxes of the individual gains in a txt file per enemy and per algorithm
-with open('results_individual_gains.txt', 'w') as f:
+with open('results/results_individual_gains.txt', 'w') as f:
     json.dump({'means': means, 'maxes': maxes}, f)
     
 
 
 # save the results of the statistical tests
-with open('results_statistical_tests.txt', 'w') as f:
+with open('results/results_statistical_tests.txt', 'w') as f:
     json.dump(results_statistical_tests, f)
