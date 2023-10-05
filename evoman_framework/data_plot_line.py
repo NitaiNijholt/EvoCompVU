@@ -141,7 +141,7 @@ data2 = extract_data(read_file(file2))
 
 
 # save mean and max in last generation
-# with open('results/results_mean_max.txt', 'w') as f:
+# with open('results_run_task/results_mean_max.txt', 'w') as f:
 #     json.dump({'mean_max': mean_max, 'max_max': max_max}, f)
 
 
@@ -150,7 +150,7 @@ testresults = lineplot(data1, data2)
 print(testresults)
 
 # save the results of the statistical tests
-with open('results/results_statistical_tests_lineplots.txt', 'w') as f:
+with open('results_run_task/results_statistical_tests_lineplots.txt', 'w') as f:
     json.dump(testresults, f)
 
 

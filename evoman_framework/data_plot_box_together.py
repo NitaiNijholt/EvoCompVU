@@ -94,7 +94,7 @@ plt.show()
 
 
 # save the mean and maxes of the individual gains in a txt file per enemt and per algorithm
-with open('results/results_individual_gains.txt', 'w') as f:
+with open('results_run_task/results_individual_gains.txt', 'w') as f:
     # mean and maxes of the individual gains per enemy and per algorithm
     means = {enemy: {'fs': np.mean(gains['fs']), 'isl': np.mean(gains['isl'])} for enemy, gains in individual_gains.items()}
     maxes = {enemy: {'fs': np.max(gains['fs']), 'isl': np.max(gains['isl'])} for enemy, gains in individual_gains.items()}
@@ -112,11 +112,11 @@ for enemy, gains in individual_gains.items():
 means = {enemy: {'fs': np.mean(gains['fs']), 'isl': np.mean(gains['isl'])} for enemy, gains in individual_gains.items()}
 maxes = {enemy: {'fs': np.max(gains['fs']), 'isl': np.max(gains['isl'])} for enemy, gains in individual_gains.items()}
 # save the mean and maxes of the individual gains in a txt file per enemy and per algorithm
-with open('results/results_individual_gains.txt', 'w') as f:
+with open('results_run_task/results_individual_gains.txt', 'w') as f:
     json.dump({'means': means, 'maxes': maxes}, f)
     
 
 
 # save the results of the statistical tests
-with open('results/results_statistical_tests.txt', 'w') as f:
+with open('results_run_task/results_statistical_tests.txt', 'w') as f:
     json.dump(results_statistical_tests, f)
