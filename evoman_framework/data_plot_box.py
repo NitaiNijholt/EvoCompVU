@@ -22,7 +22,7 @@ with open('data_champion_islanding_final.txt', 'r') as f:
     fs_champions = json.load(f)
     # Change enemy number and run number to int and champions to np.arrays
     fs_champions = {int(k): {int(run): np.array(v) for run, v in runs.items()} for k, runs in fs_champions.items()}
-with open('data_lineplot_islanding_final.txt', 'r') as f:
+with open('lineplot/data_lineplot_islanding_final.txt', 'r') as f:
     isl_champions = json.load(f)
     # Change enemy number and run number to int and champions to np.arrays
     isl_champions = {int(k): {int(run): np.array(v) for run, v in runs.items()} for k, runs in isl_champions.items()}
