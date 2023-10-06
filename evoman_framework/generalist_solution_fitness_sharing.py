@@ -2,9 +2,8 @@ from evoman.environment import Environment
 from demo_controller import player_controller
 import numpy as np
 import os
-import sys
 
-class Evolve:
+class EvolveNiche:
 
     def __init__(self, experiment_name, n_hidden_neurons, population_size, generations, mutation_probability, mutation_sigma, recombination, survivor_selection, parent_selection, k, n_parents, n_offspring, tournament_lambda, survivor_lambda, sharing_alpha, sharing_sigma, enemies):
         self.env = Environment(experiment_name=experiment_name,
@@ -16,6 +15,7 @@ class Evolve:
                   speed="fastest",
                   visuals=False)
         
+        self.experiment_name = experiment_name
         self.n_hidden_neurons = n_hidden_neurons
         self.n_vars = (self.env.get_num_sensors() + 1) * self.n_hidden_neurons + (self.n_hidden_neurons + 1) * 5
         
@@ -51,12 +51,10 @@ class Evolve:
             self.survivor_lambda = self.population_size
         return np.random.uniform(self.dom_l, self.dom_u, (self.population_size, self.n_vars))
 
-    # Runs simulation, returns fitness f
     def simulation(self, individual):
         f,p,e,t = self.env.play(pcont=individual)
         return f, e
     
-    # normalizes
     def norm(self, fitness_individual):
         return max(0.0000000001, (fitness_individual - min(self.fitness_population)) / (max(self.fitness_population) - min(self.fitness_population)))
 
@@ -106,6 +104,7 @@ class Evolve:
         Returns:
         - np.ndarray: Array containing the fitness values of the individuals in the population.
         """
+
         if len(enemies) == 0:
             enemies = self.enemies
         
@@ -115,10 +114,10 @@ class Evolve:
             energy_per_enemy = []
 
             for enemy in enemies:
-                self.env = Environment(experiment_name=experiment_name,
+                self.env = Environment(experiment_name=self.experiment_name,
                     enemies=[enemy],
                     playermode="ai",
-                    player_controller=player_controller(n_hidden_neurons),
+                    player_controller=player_controller(self.n_hidden_neurons),
                     enemymode="static",
                     level=2,
                     speed="fastest",
@@ -126,30 +125,29 @@ class Evolve:
                 
                 fitness, enemy_health = self.simulation(np.array(individual))
 
-                # append fitness of individual vs each enemy
+                # Append fitness of individual vs each enemy
                 fitness_vs_individual_enemy.append(fitness)
 
-                # append energy each enemy after fighting individual
+                # Append energy each enemy after fighting individual
                 energy_per_enemy.append(enemy_health)
             
             beaten = [1 if energy == 0 else 0 for energy in energy_per_enemy]
 
-            # count the enemies beaten, add 0.0001 to avoid fitness being 0
+            # Count the enemies beaten, add 0.0001 to avoid fitness being 0
 
             total_beaten = sum([1 for energy in energy_per_enemy if energy == 0]) + 0.0001
 
-            # modified fitness function accounting for enemies beaten
+            # Modified fitness function accounting for enemies beaten
             fitness_individual_total = np.sum(fitness_vs_individual_enemy)/len(enemies)*total_beaten
 
 
-            # create dictionary with round info
+            # Create dictionary with round info
             dict_round_info = {'total_fitness': fitness_individual_total, 'fitness_vs_individual_enemy': fitness_vs_individual_enemy, 'energy_per_enemy': energy_per_enemy, 'beaten': beaten, 'total_beaten': total_beaten}
 
             return dict_round_info
 
         if population is None:
             population = self.population
-        # Check if the provided population is a numpy array
 
         fitness_population = []
         dict_round_info_population = {}
@@ -158,10 +156,10 @@ class Evolve:
             energy_per_enemy = []
 
             for enemy in enemies:
-                self.env = Environment(experiment_name=experiment_name,
+                self.env = Environment(experiment_name=self.experiment_name,
                     enemies=[enemy],
                     playermode="ai",
-                    player_controller=player_controller(n_hidden_neurons),
+                    player_controller=player_controller(self.n_hidden_neurons),
                     enemymode="static",
                     level=2,
                     speed="fastest",
@@ -169,32 +167,30 @@ class Evolve:
                 
                 fitness, enemy_health = self.simulation(np.array(individual))
 
-                # append fitness of individual vs each enemy
+                # Append fitness of individual vs each enemy
                 fitness_vs_individual_enemy.append(fitness)
 
-                # append energy each enemy after fighting individual
+                # Append energy each enemy after fighting individual
                 energy_per_enemy.append(enemy_health)
                 
             beaten = [1 if energy == 0 else 0 for energy in energy_per_enemy]
 
-            # count the enemies beaten, add 0.0001 to avoid fitness being 0
+            # Count the enemies beaten, add 0.0001 to avoid fitness being 0
             total_beaten = sum([1 for energy in energy_per_enemy if energy == 0]) + 0.0001
 
-            # modified fitness function accounting for enemies beaten
+            # Modified fitness function accounting for enemies beaten
             fitness_individual_total = np.sum(fitness_vs_individual_enemy)/len(enemies)*total_beaten
 
-            # create dictionary with round info
+            # Create dictionary with round info
             dict_round_info = {'fitness_vs_individual_enemy':fitness_vs_individual_enemy, 'energy_per_enemy':energy_per_enemy, 'beaten':beaten, 'total_beaten': total_beaten}
 
-            # append fitness of individual to population
+            # Append fitness of individual to population
             fitness_population.append(fitness_individual_total)
-            # append round info of individual to population
+            # Append round info of individual to population
             dict_round_info_population[tuple(individual)] = dict_round_info 
 
-
-
-        # If fitness sharing is enabled
         if fitness_sharing:
+
             # Initialize a zero vector to store the cumulative similarity scores for each individual
             similarity_vector = np.zeros(len(fitness_population))
 
@@ -212,10 +208,10 @@ class Evolve:
             # Adjust the fitness of each individual based on its cumulative similarity score
             fitness_shared = fitness_population/similarity_vector
             
-            # note that the fitness info in the dictionary is pre the adjustment to shared fitness
+            # Note that the fitness info in the dictionary is pre the adjustment to shared fitness
             return fitness_shared, dict_round_info_population
         
-        # note that the fitness is not shared
+        # Note that the fitness is not shared
         return np.array(fitness_population), dict_round_info_population   
 
 
@@ -238,7 +234,6 @@ class Evolve:
         # Get the lambda best individuals
         return [selected_individuals[i] for i in sorted_indices[:self.tournament_lambda]]
     
-    # limits
     def limits(self, weight):
         if weight > self.dom_u:
             return self.dom_u
@@ -295,6 +290,7 @@ class Evolve:
                 offspring = self.line_recombination(mating_pool, offspring)
 
             for individual in offspring:
+
                 # Mutates and ensures no weight is outside the range [-1, 1]
                 individual = self.mutate(individual)
                 individual = [self.limits(weight) for weight in individual]
@@ -303,6 +299,7 @@ class Evolve:
         return np.array(total_offspring)
     
     def mutate(self, individual):
+
         # Mutates the offspring
         for i in range(len(individual)):
             if np.random.uniform() <= self.mutation_probability:
@@ -385,25 +382,24 @@ class Evolve:
 
         population_mode: if True, saves the whole population, if False, only saves the best individual
         """
-        filepath = f"results/{filename}.txt"
-        if filepath[-8:] == '.txt.txt':
-            filepath = filepath[:-4]
-        # Create results directory if it doesn't exist
-        if not os.path.exists('results'):
-            os.makedirs('results')
-        # Check that filename.txt is non-existent to avoid overwriting long computing work
-        # assert not os.path.exists(filepath), f"{filepath} already exists."
+
+        filepath = f"results/fitness_sharing/{filename}.txt"
+
 
         if population_mode:
             with open(filepath, 'w') as f:
+
             # Write the description
                 f.write(f"{description}\n")
+
                 # Write the best individual
                 f.write(f"{self.population[self.best]}\n")
                 for individual in self.population:
+
                     # Printing rest of the population
                     f.write(f"{individual}\n")
                     total_fitness, fitness_vs_individual_enemy, energy_per_enemy, beaten, total_beaten = self.get_fitness(individual=best_individual).values()
+
                     # Write the enemy-fitness dictionary
                     f.write(f"total_fitness_value: {total_fitness}\n")
                     f.write(f"fitness_vs_individual_enemy: {fitness_vs_individual_enemy}\n")
@@ -413,8 +409,10 @@ class Evolve:
         else:
             best_individual = self.population[self.best]
             with open(filepath, 'w') as f:
+
                 # Write the description
                 f.write(f"{description}\n")
+
                 # Write the best individual
                 f.write(f"{best_individual}\n")
 
@@ -456,6 +454,6 @@ if __name__ == "__main__":
 
     experiment_name = 'optimization_test'
     enemies = [1, 2, 3, 4, 5, 6, 7, 8]
-    evolve = Evolve(experiment_name, n_hidden_neurons, population_size, generations, mutation_probability, mutation_sigma, recombination, survivor_selection, parent_selection, k, n_parents, n_offspring, tournament_lambda, survivor_lambda, sharing_alpha, sharing_sigma, enemies)
+    evolve = EvolveNiche(experiment_name, n_hidden_neurons, population_size, generations, mutation_probability, mutation_sigma, recombination, survivor_selection, parent_selection, k, n_parents, n_offspring, tournament_lambda, survivor_lambda, sharing_alpha, sharing_sigma, enemies)
     evolve.run()
     evolve.save('test2', 'test')

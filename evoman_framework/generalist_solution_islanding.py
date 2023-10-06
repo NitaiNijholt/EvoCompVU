@@ -2,9 +2,8 @@ from evoman.environment import Environment
 from demo_controller import player_controller
 import numpy as np
 import os
-import sys
 
-class Evolve:
+class EvolveIsland:
 
     def __init__(self, experiment_name, n_hidden_neurons, population_size, generations, mutation_probability, recombination, survivor_selection, k, n_parents, n_offspring, tournament_lambda, survivor_lambda, migration_frequency, migration_amount, num_islands, mutation_stepsize, enemies = [8]):
         self.env = Environment(experiment_name=experiment_name,
@@ -16,6 +15,7 @@ class Evolve:
                   speed="fastest",
                   visuals=False)
         
+        self.experiment_name = experiment_name
         self.n_hidden_neurons = n_hidden_neurons
         self.n_vars = (self.env.get_num_sensors() + 1) * self.n_hidden_neurons + (self.n_hidden_neurons + 1) * 5
 
@@ -46,21 +46,20 @@ class Evolve:
         self.migration_amount = migration_amount
         self.num_islands = num_islands
         self.islands = [self.initialize() for _ in range(self.num_islands)]
-        #self.fitness_islands = [self.get_fitness(island)[0] for island in self.islands]
-
-
 
     def initialize(self):
         if self.survivor_mode != 'lambda,mu':
             self.survivor_lambda = self.population_size
+
         population = []
-        for i in range(self.population_size):
+        for _ in range(self.population_size):
             individual = np.random.uniform(self.dom_l, self.dom_u, self.n_vars)
             population.append((individual, self.get_fitness(individual=individual)))
         return population
     
     def migrate(self):
         for i in range(self.num_islands):
+
             # Select the top 10 fittest individuals from the current island
             top_indices = sorted(range(self.population_size), key=lambda i: self.population[i][1], reverse=True)
             
@@ -77,16 +76,13 @@ class Evolve:
                 self.islands[next_island][index] = migrants[i]
 
 
-    # Runs simulation, returns fitness f
     def simulation(self, individual):
         f,p,e,t = self.env.play(pcont=individual)
         return f, e
     
-    # normalizes
     def norm(self, fitness_individual):
         return max(0.0000000001, (fitness_individual - min(self.fitness_population)) / (max(self.fitness_population) - min(self.fitness_population)))
 
-    # evaluation
     def get_fitness(self, population=None, individual=[], return_dict=False, enemies=[]):
         """
         Calculate the fitness of individuals in a population based on the simulation results. 
@@ -98,6 +94,7 @@ class Evolve:
         Returns:
         - np.ndarray: Array containing the fitness values of the individuals in the population.
         """
+
         if len(enemies) == 0:
             enemies = self.enemies
 
@@ -107,10 +104,10 @@ class Evolve:
             energy_per_enemy = []
 
             for enemy in enemies:
-                self.env = Environment(experiment_name=experiment_name,
+                self.env = Environment(experiment_name=self.experiment_name,
                     enemies=[enemy],
                     playermode="ai",
-                    player_controller=player_controller(n_hidden_neurons),
+                    player_controller=player_controller(self.n_hidden_neurons),
                     enemymode="static",
                     level=2,
                     speed="fastest",
@@ -118,22 +115,23 @@ class Evolve:
                 
                 fitness, enemy_health = self.simulation(np.array(individual))
 
-                # append fitness of individual vs each enemy
+                # Append fitness of individual vs each enemy
                 fitness_vs_individual_enemy.append(fitness)
 
-                # append energy each enemy after fighting individual
+                # Append energy each enemy after fighting individual
                 energy_per_enemy.append(enemy_health)
 
-            # count the enemies beaten, add 1 to avoid fitness being 0
+            # Count the enemies beaten, add 1 to avoid fitness being 0
             beaten = [1 if energy == 0 else 0 for energy in energy_per_enemy]
 
             total_beaten = sum([1 for energy in energy_per_enemy if energy == 0]) + 0.0001
 
-            # modified fitness function accounting for enemies beaten
+            # Modified fitness function accounting for enemies beaten
             fitness_individual_total = np.sum(fitness_vs_individual_enemy)/len(enemies)*total_beaten
 
             if return_dict:
-                # create dictionary with round info
+
+                # Create dictionary with round info
                 return {'total_fitness': fitness_individual_total, 'fitness_vs_individual_enemy': fitness_vs_individual_enemy, 'energy_per_enemy': energy_per_enemy, 'beaten': beaten, 'total_beaten': total_beaten}
 
             return fitness_individual_total
@@ -158,7 +156,6 @@ class Evolve:
         # Get the lambda best individuals
         return sorted_individuals[:self.tournament_lambda]
     
-    # limits
     def limits(self, weight):
         if weight > self.dom_u:
             return self.dom_u
@@ -203,6 +200,7 @@ class Evolve:
                 offspring = self.line_recombination(mating_pool, offspring)
 
             for individual in offspring:
+
                 # Mutates and ensures no weight is outside the range [-1, 1]
                 individual = self.mutate(individual)
                 individual = [self.limits(weight) for weight in individual]
@@ -212,6 +210,7 @@ class Evolve:
 
     
     def mutate(self, individual):
+
         # Mutates the offspring
         for i in range(len(individual)):
             if np.random.uniform() <= self.mutation_probability:
@@ -228,29 +227,20 @@ class Evolve:
             # select the fittest individuals from the population
             self.population = self.population[np.argsort(self.population[:, 1])[::-1]][:self.population_size]
 
-        
         elif self.survivor_mode == 'tournament':
 
             # Extend self.population with offspring
             self.population.extend(offspring)
 
             # Create a new list for the tournament selection
-            tournament_selection = [self.tournament()[j] for _ in range(int(self.population_size / self.tournament_lambda)) for j in range(self.tournament_lambda)]
-
-
-            # Update self.population with the tournament selection
-            self.population = tournament_selection
-
+            self.population = [self.tournament()[j] for _ in range(int(self.population_size / self.tournament_lambda)) for j in range(self.tournament_lambda)]
 
     def run(self):
 
         self.env.state_to_log() 
-        ini_g = 0
         global_plot_data = {}  # To store plotting stats globally across all islands
 
-        # print(f"GENERATION {ini_g} {round(self.fitness_population[self.best], 6)} {round(self.mean, 6)} {round(self.std, 6)}")
-
-        for i in range(ini_g + 1, self.generations):
+        for i in range(1, self.generations):
             print(f"GENERATION {i}")
 
             # Holders for global stats
@@ -262,19 +252,18 @@ class Evolve:
             for j in range(self.num_islands):
 
                 self.population = self.islands[j]
+
                 # New individuals by crossover
                 offspring = self.reproduce()
-
                 self.survivor_selection(offspring)
 
                 # For local stats
-                local_best = max(self.population, key=lambda x: x[1])[1]
                 fitness_values = [individual[1] for individual in self.population]
+                local_best = max(fitness_values)
                 local_std = np.std(fitness_values)
                 local_mean = np.mean(fitness_values)
 
-                # Update the island and its fitness values
-                
+                # Update the island
                 self.islands[j] = self.population
 
                 print(f"ISLAND {j} - GENERATION {i} {round(local_best, 6)} {round(local_mean, 6)} {round(local_std, 6)}")
@@ -286,7 +275,7 @@ class Evolve:
 
             # Calculate and store the global mean and std deviation for this generation
             global_mean = np.mean(global_mean_fitness)
-            global_std = np.mean(global_std_fitness)  # You can also use np.std if you prefer
+            global_std = np.mean(global_std_fitness)
 
             global_plot_data[i] = (round(global_best_fitness, 6), round(global_mean, 6), round(global_std, 6))
             print(f"GLOBAL STATS - GENERATION {i} {round(global_best_fitness, 6)} {round(global_mean, 6)} {round(global_std, 6)}")
@@ -314,16 +303,10 @@ class Evolve:
         filename: the name of the txt file, doesn't have to end in .txt
 
         """
-        filepath = f"results/{filename}.txt"
-        if filepath[-8:] == '.txt.txt':
-            filepath = filepath[:-4]
-        # Create results directory if it doesn't exist
-        if not os.path.exists('results'):
-            os.makedirs('results')
-        # Check that filename.txt is non-existent to avoid overwriting long computing work
-        # assert not os.path.exists(filepath), f"{filepath} already exists."
 
-        # Fetch and compile values that we need from the class variables
+        filepath = f"results/islanding/{filename}.txt"
+
+
         # Combine all islands into a single population
         combined_population = np.vstack(self.islands)
 
@@ -333,8 +316,10 @@ class Evolve:
         total_fitness, fitness_vs_individual_enemy, energy_per_enemy, beaten, total_beaten = self.get_fitness(individual=best_individual, return_dict=True, enemies=[1, 2, 3, 4, 5, 6, 7, 8]).values()
 
         with open(filepath, 'w') as f:
+
             # Write the description
             f.write(f"{description}\n")
+
             # Write the best individual
             f.write(f"{best_individual}\n")
 
@@ -372,6 +357,6 @@ if __name__ == "__main__":
     n_offspring = 2
     experiment_name = 'optimization_test'
     enemies = [1, 2, 3, 4]
-    evolve = Evolve(experiment_name, n_hidden_neurons, population_size, generations, mutation_probability, recombination, survivor_selection, k, n_parents, n_offspring, tournament_lambda, survivor_lambda, migration_frequency, migration_amount, num_islands, mutation_stepsize, enemies)
+    evolve = EvolveIsland(experiment_name, n_hidden_neurons, population_size, generations, mutation_probability, recombination, survivor_selection, k, n_parents, n_offspring, tournament_lambda, survivor_lambda, migration_frequency, migration_amount, num_islands, mutation_stepsize, enemies)
     evolve.run()
     evolve.save('test2', 'test')
