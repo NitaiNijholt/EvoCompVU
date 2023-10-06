@@ -99,7 +99,7 @@ class Evolve:
 
 
     # evaluation
-    def get_fitness(self, population=None, fitness_sharing=True, individual = []):
+    def get_fitness(self, population=None, fitness_sharing=False, individual = []):
         """Calculate the fitness of individuals in a population based on the simulation results. 
         If fitness sharing is enabled, the fitness of an individual is adjusted based on its similarity to others.
 
@@ -431,7 +431,6 @@ class Evolve:
                 f.write(f"{self.population[self.best]}\n")
                 fitness_vs_individual_enemy, energy_per_enemy, beaten, total_beaten  = self.get_fitness(individual=self.population[self.best])[1].values()
                 total_fitness_value = self.get_fitness(individual=self.population[self.best])[0]
-                print(fitness_vs_individual_enemy)
                 # Write the enemy-fitness dictionary
                 f.write(f"total_fitness_value: {total_fitness_value}\n")
                 f.write(f"fitness_vs_individual_enemy: {fitness_vs_individual_enemy}\n")
