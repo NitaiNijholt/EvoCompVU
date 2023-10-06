@@ -1,7 +1,7 @@
-
+from generalist_solution_fitness_sharing import EvolveNiche
 from generalist_solution_islanding import EvolveIsland
 import os
-from generalist_solution_fitness_sharing import EvolveNiche
+import sys
 
 
 def evolve_island(settings):
@@ -22,7 +22,11 @@ def evolve_island(settings):
     num_islands = settings['number of islands']
     mutation_stepsize = settings['mutation stepsize']
     enemies = settings['enemies']
+    if survivor_selection not in ['tournament', 'lambda,mu']:
+        print(f"Invalid survivor selection mode: {survivor_selection}. Pick either 'tournament' or 'lambda,mu'.")
+        sys.exit()
     return EvolveIsland(experiment_name, n_hidden_neurons, population_size, generations, mutation_probability, recombination, survivor_selection, k, n_parents, n_offspring, tournament_lambda, survivor_lambda, migration_frequency, migration_amount, num_islands, mutation_stepsize, enemies)
+
 
 def evolve_niche(settings):
     experiment_name = settings['experiment name']
@@ -43,6 +47,7 @@ def evolve_niche(settings):
     sharing_sigma = settings['sharing sigma']
     parent_selection = settings['parent selection mode']
     return EvolveNiche(experiment_name, n_hidden_neurons, population_size, generations, mutation_probability, mutation_stepsize, recombination, survivor_selection, parent_selection, k, n_parents, n_offspring, tournament_lambda, survivor_lambda, sharing_alpha, sharing_sigma, enemies)
+
 
 def check_filename(filename):
     while True:
@@ -104,17 +109,17 @@ def run(mode, settings, filename = None):
 os.environ["SDL_VIDEODRIVER"] = "dummy"
 
 # Pick i for islanding and f for fitness sharing
-mode = 'f'
+mode = 'i'
 
 # General settings
 settings = {
     'population size': 50,
     'generations': 3,
-    'mutation probability': 0.2,
+    'mutation probability': 0.105,
     'number of hidden neurons': 10,
-    'mutation stepsize': 0.215,
+    'mutation stepsize': 0.324,
     'recombination mode': 'line',
-    'survivor selection mode': 'tournament',
+    'survivor selection mode': 'roulette',
     'survivor selection lambda': 141,
     'k': 4,
     'tournament lambda': 1,
