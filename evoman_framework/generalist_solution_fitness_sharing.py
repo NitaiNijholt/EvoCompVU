@@ -95,10 +95,7 @@ class Evolve:
         
         return similarity
 
-
-
-    # evaluation
-    def get_fitness(self, population=None, fitness_sharing=True, individual = []):
+    def get_fitness(self, population=None, fitness_sharing=True, individual = [], enemies = []):
         """Calculate the fitness of individuals in a population based on the simulation results. 
         If fitness sharing is enabled, the fitness of an individual is adjusted based on its similarity to others.
 
@@ -109,12 +106,15 @@ class Evolve:
         Returns:
         - np.ndarray: Array containing the fitness values of the individuals in the population.
         """
+        if len(enemies) == 0:
+            enemies = self.enemies
+        
         if len(individual) > 0:
 
             fitness_vs_individual_enemy = []
             energy_per_enemy = []
 
-            for enemy in self.enemies:
+            for enemy in enemies:
                 self.env = Environment(experiment_name=experiment_name,
                     enemies=[enemy],
                     playermode="ai",
@@ -139,7 +139,7 @@ class Evolve:
             total_beaten = sum([1 for energy in energy_per_enemy if energy == 0]) + 0.0001
 
             # modified fitness function accounting for enemies beaten
-            fitness_individual_total = np.sum(fitness_vs_individual_enemy)/len(self.enemies)*total_beaten
+            fitness_individual_total = np.sum(fitness_vs_individual_enemy)/len(enemies)*total_beaten
 
 
             # create dictionary with round info
@@ -157,7 +157,7 @@ class Evolve:
             fitness_vs_individual_enemy = []
             energy_per_enemy = []
 
-            for enemy in self.enemies:
+            for enemy in enemies:
                 self.env = Environment(experiment_name=experiment_name,
                     enemies=[enemy],
                     playermode="ai",
@@ -181,7 +181,7 @@ class Evolve:
             total_beaten = sum([1 for energy in energy_per_enemy if energy == 0]) + 0.0001
 
             # modified fitness function accounting for enemies beaten
-            fitness_individual_total = np.sum(fitness_vs_individual_enemy)/len(self.enemies)*total_beaten
+            fitness_individual_total = np.sum(fitness_vs_individual_enemy)/len(enemies)*total_beaten
 
             # create dictionary with round info
             dict_round_info = {'fitness_vs_individual_enemy':fitness_vs_individual_enemy, 'energy_per_enemy':energy_per_enemy, 'beaten':beaten, 'total_beaten': total_beaten}
@@ -403,10 +403,9 @@ class Evolve:
                 for individual in self.population:
                     # Printing rest of the population
                     f.write(f"{individual}\n")
-                    fitness_vs_individual_enemy, energy_per_enemy, beaten, total_beaten  = self.get_fitness(individual=individual)[1].values()
-                    total_fitness_value = self.get_fitness(individual=individual)[0]
+                    total_fitness, fitness_vs_individual_enemy, energy_per_enemy, beaten, total_beaten = self.get_fitness(individual=best_individual).values()
                     # Write the enemy-fitness dictionary
-                    f.write(f"total_fitness_value: {total_fitness_value}\n")
+                    f.write(f"total_fitness_value: {total_fitness}\n")
                     f.write(f"fitness_vs_individual_enemy: {fitness_vs_individual_enemy}\n")
                     f.write(f"energy_per_enemy:{energy_per_enemy}\n")
                     f.write(f"beaten: {beaten}\n")
@@ -419,7 +418,7 @@ class Evolve:
                 # Write the best individual
                 f.write(f"{best_individual}\n")
 
-                total_fitness, fitness_vs_individual_enemy, energy_per_enemy, beaten, total_beaten = self.get_fitness(individual=best_individual).values()
+                total_fitness, fitness_vs_individual_enemy, energy_per_enemy, beaten, total_beaten = self.get_fitness(individual=best_individual, enemies=[1, 2, 3, 4, 5, 6, 7, 8]).values()
 
                 # Write the enemy-fitness dictionary
                 f.write(f"Overall fitness:  {total_fitness}\n")
@@ -432,8 +431,8 @@ class Evolve:
 if __name__ == "__main__":
 
     os.environ["SDL_VIDEODRIVER"] = "dummy"
-    population_size = 30
-    generations = 1
+    population_size = 100
+    generations = 10
     mutation_probability = 0.043551807574295706
     mutation_sigma = 0.718031541166932
     n_hidden_neurons = 10
