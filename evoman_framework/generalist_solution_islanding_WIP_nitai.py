@@ -406,28 +406,19 @@ class Evolve:
         global_best_index = np.argmax(combined_fitness)
         best_individual = combined_population[global_best_index]
 
-        # with open(filepath, 'w') as f:
-        #     # Write the description
-        #     f.write(f"{description}\n")
-        #     # Write the best individual
-        #     f.write(f"{best_individual}\n")
-        #     # Write the enemy-fitness dictionary
-        #     f.write(f"{fitness_vs_individual_enemy}\n")
-        #     f.write(f"{energy_per_enemy}\n")
-        #     f.write(f"{beaten}\n")
-
+    
 
         if population_mode:
             with open(filepath, 'w') as f:
             # Write the description
                 f.write(f"{description}\n")
-                # Write the best individual
-                f.write(f"{best_individual}\n")
                 for individual in combined_population:
+                    # Write the best individual
+                    f.write(f"{best_individual}\n")
                     # Printing rest of the population
                     f.write(f"{individual}\n")
                     fitness_vs_individual_enemy, energy_per_enemy, beaten, total_beaten  = self.get_fitness(individual=individual)[1].values()
-                    total_fitness_value = self.get_fitness(individual=self.population[self.best])[0]
+                    total_fitness_value = self.get_fitness(individual=combined_population)[0]
                     # Write the enemy-fitness dictionary
                     f.write(f"total_fitness_value: {total_fitness_value}\n")
                     f.write(f"fitness_vs_individual_enemy: {fitness_vs_individual_enemy}\n")
@@ -439,7 +430,7 @@ class Evolve:
                 # Write the description
                 f.write(f"{description}\n")
                 # Write the best individual
-                f.write(f"{self.population[self.best]}\n")
+                f.write(f"{best_individual}\n")
                 fitness_vs_individual_enemy, energy_per_enemy, beaten, total_beaten  = self.get_fitness(individual=best_individual)[1].values()
                 total_fitness_value = self.get_fitness(individual=best_individual)[0]
                 print(fitness_vs_individual_enemy)
