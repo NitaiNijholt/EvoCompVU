@@ -41,7 +41,7 @@ class Evolve:
         self.sharing_sigma = sharing_sigma
 
         self.population = self.initialize()
-        self.fitness_population = self.get_fitness()
+        self.fitness_population = self.get_fitness()[0]
         self.best = np.argmax(self.fitness_population)
         self.mean = np.mean(self.fitness_population)
         self.std = np.std(self.fitness_population)
@@ -111,8 +111,8 @@ class Evolve:
         """
         if len(individual) > 0:
 
-            fitness_vs_individual_enemy = {}
-            energy_per_enemy = {}
+            fitness_vs_individual_enemy = []
+            energy_per_enemy = []
 
             for enemy in self.enemies:
                 self.env = Environment(experiment_name=experiment_name,
@@ -124,73 +124,72 @@ class Evolve:
                     speed="fastest",
                     visuals=False)
                 
-                fitness, enemy_health = self.simulation(individual)
+                fitness, enemy_health = self.simulation(np.array(individual))
 
                 # append fitness of individual vs each enemy
-                fitness_vs_individual_enemy[enemy] = fitness
+                fitness_vs_individual_enemy.append(fitness)
 
                 # append energy each enemy after fighting individual
-                energy_per_enemy[enemy] = enemy_health
+                energy_per_enemy.append(enemy_health)
+            
+            beaten = [1 if energy == 0 else 0 for energy in energy_per_enemy]
 
-            # count the enemies beaten, add 1 to avoid fitness being 0
-            beaten = sum([1 for energy in energy_per_enemy if energy == 0]) + 1
+            # count the enemies beaten, add 0.0001 to avoid fitness being 0
 
-            return fitness_vs_individual_enemy, energy_per_enemy, beaten
+            total_beaten = sum([1 for energy in energy_per_enemy if energy == 0]) + 0.0001
+
+            # modified fitness function accounting for enemies beaten
+            fitness_individual_total = np.sum(fitness_vs_individual_enemy)/len(self.enemies)*total_beaten
+
+
+            # create dictionary with round info
+            dict_round_info = {'total_fitness': fitness_individual_total, 'fitness_vs_individual_enemy': fitness_vs_individual_enemy, 'energy_per_enemy': energy_per_enemy, 'beaten': beaten, 'total_beaten': total_beaten}
+
+            return dict_round_info
 
         if population is None:
             population = self.population
         # Check if the provided population is a numpy array
 
-        if len(population) == 0:
-            
-            fitness_population = []
-            for individual in self.population:
-                commulative_fitness = 0
-                beaten = 1
+        fitness_population = []
+        dict_round_info_population = {}
+        for individual in self.population:
+            fitness_vs_individual_enemy = []
+            energy_per_enemy = []
 
-                for enemy in self.enemies:
-                    self.env = Environment(experiment_name=experiment_name,
-                        enemies=[enemy],
-                        playermode="ai",
-                        player_controller=player_controller(n_hidden_neurons),
-                        enemymode="static",
-                        level=2,
-                        speed="fastest",
-                        visuals=False)
-                    
-                    fitness, enemy_health = self.simulation(individual)
+            for enemy in self.enemies:
+                self.env = Environment(experiment_name=experiment_name,
+                    enemies=[enemy],
+                    playermode="ai",
+                    player_controller=player_controller(n_hidden_neurons),
+                    enemymode="static",
+                    level=2,
+                    speed="fastest",
+                    visuals=False)
+                
+                fitness, enemy_health = self.simulation(np.array(individual))
 
-                    if enemy_health == 0.:
-                        beaten += 1
+                # append fitness of individual vs each enemy
+                fitness_vs_individual_enemy.append(fitness)
 
-                    commulative_fitness += fitness
+                # append energy each enemy after fighting individual
+                energy_per_enemy.append(enemy_health)
+                
+            beaten = [1 if energy == 0 else 0 for energy in energy_per_enemy]
 
-                fitness_population.append((commulative_fitness/len(self.enemies)) * beaten)
+            # count the enemies beaten, add 0.0001 to avoid fitness being 0
+            total_beaten = sum([1 for energy in energy_per_enemy if energy == 0]) + 0.0001
 
-        else:
-            fitness_population = []
-            for individual in population:
-                commulative_fitness = 0
-                beaten = 1
+            # modified fitness function accounting for enemies beaten
+            fitness_individual_total = np.sum(fitness_vs_individual_enemy)/len(self.enemies)*total_beaten
 
-                for enemy in self.enemies:
-                    self.env = Environment(experiment_name=experiment_name,
-                        enemies=[enemy],
-                        playermode="ai",
-                        player_controller=player_controller(n_hidden_neurons),
-                        enemymode="static",
-                        level=2,
-                        speed="fastest",
-                        visuals=False)
-                    
-                    fitness, enemy_health = self.simulation(individual)
+            # create dictionary with round info
+            dict_round_info = {'fitness_vs_individual_enemy':fitness_vs_individual_enemy, 'energy_per_enemy':energy_per_enemy, 'beaten':beaten, 'total_beaten': total_beaten}
 
-                    if enemy_health == 0.:
-                        beaten += 1
-
-                    commulative_fitness += fitness
-
-                fitness_population.append((commulative_fitness/len(self.enemies)) * beaten)
+            # append fitness of individual to population
+            fitness_population.append(fitness_individual_total)
+            # append round info of individual to population
+            dict_round_info_population[tuple(individual)] = dict_round_info 
 
 
 
@@ -212,8 +211,12 @@ class Evolve:
             
             # Adjust the fitness of each individual based on its cumulative similarity score
             fitness_shared = fitness_population/similarity_vector
-            return fitness_shared
-        return fitness_population
+            
+            # note that the fitness info in the dictionary is pre the adjustment to shared fitness
+            return fitness_shared, dict_round_info_population
+        
+        # note that the fitness is not shared
+        return np.array(fitness_population), dict_round_info_population   
 
 
     def tournament(self):
@@ -319,7 +322,7 @@ class Evolve:
             # select the fittest individuals from the population
             self.population = self.population[fittest]
 
-            self.fitness_population = self.get_fitness(self.population)
+            self.fitness_population = self.get_fitness(self.population)[0]
 
         elif self.survivor_mode == 'roulette':
 
@@ -358,7 +361,7 @@ class Evolve:
 
             # New individuals by crossover
             offspring = self.reproduce()
-            fitness_offspring = self.get_fitness(offspring)
+            fitness_offspring = self.get_fitness(offspring)[0]
 
             self.survivor_selection(offspring, fitness_offspring)
 
@@ -372,7 +375,7 @@ class Evolve:
         # Return best individual with their fitness score
         return ((self.population[self.best], round(self.fitness_population[self.best])), plot_data)
 
-    def save(self, filename, description):
+    def save(self, filename, description, population_mode=False):
         """
         description: THE MOST IMPORTANT variable, you should always include:
             - which EA was run
@@ -380,8 +383,7 @@ class Evolve:
 
         filename: the name of the txt file, doesn't have to end in .txt
 
-        Right now the code presumes just one enemy, when that is changed for the generalist, we are gonna change the code
-        so that it finds all 8 fitness values and saves all of those in the enemy_fitness_dict.
+        population_mode: if True, saves the whole population, if False, only saves the best individual
         """
         filepath = f"results/{filename}.txt"
         if filepath[-8:] == '.txt.txt':
@@ -390,19 +392,41 @@ class Evolve:
         if not os.path.exists('results'):
             os.makedirs('results')
         # Check that filename.txt is non-existent to avoid overwriting long computing work
-        assert not os.path.exists(filepath), f"{filepath} already exists."
+        # assert not os.path.exists(filepath), f"{filepath} already exists."
 
-        with open(filepath, 'w') as f:
+        if population_mode:
+            with open(filepath, 'w') as f:
             # Write the description
-            f.write(f"{description}\n")
-            # Write the best individual
-            f.write(f"{self.population[self.best]}\n")
+                f.write(f"{description}\n")
+                # Write the best individual
+                f.write(f"{self.population[self.best]}\n")
+                for individual in self.population:
+                    # Printing rest of the population
+                    f.write(f"{individual}\n")
+                    fitness_vs_individual_enemy, energy_per_enemy, beaten, total_beaten  = self.get_fitness(individual=individual)[1].values()
+                    total_fitness_value = self.get_fitness(individual=individual)[0]
+                    # Write the enemy-fitness dictionary
+                    f.write(f"total_fitness_value: {total_fitness_value}\n")
+                    f.write(f"fitness_vs_individual_enemy: {fitness_vs_individual_enemy}\n")
+                    f.write(f"energy_per_enemy:{energy_per_enemy}\n")
+                    f.write(f"beaten: {beaten}\n")
+                    f.write(f"beaten: {total_beaten}\n")
+        else:
+            best_individual = self.population[self.best]
+            with open(filepath, 'w') as f:
+                # Write the description
+                f.write(f"{description}\n")
+                # Write the best individual
+                f.write(f"{best_individual}\n")
 
-            fitness_vs_individual_enemy, energy_per_enemy, beaten = self.get_fitness(individual=self.population[self.best])
-            # Write the enemy-fitness dictionary
-            f.write(f"{fitness_vs_individual_enemy}\n")
-            f.write(f"{energy_per_enemy}\n")
-            f.write(f"{beaten}\n")
+                total_fitness, fitness_vs_individual_enemy, energy_per_enemy, beaten, total_beaten = self.get_fitness(individual=best_individual).values()
+
+                # Write the enemy-fitness dictionary
+                f.write(f"Overall fitness:  {total_fitness}\n")
+                f.write(f"The fitness per enemy: {fitness_vs_individual_enemy}\n")
+                f.write(f"The energy per enemy after the simulation: {energy_per_enemy}\n")
+                f.write(f"The beaten enemies are: {beaten}\n")
+                f.write(f"Total beaten enemies: {int(total_beaten)}\n")
 
 
 if __name__ == "__main__":

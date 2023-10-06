@@ -38,7 +38,7 @@ class Evolve:
         self.original_population_size = population_size
 
         self.population = self.initialize()
-        self.fitness_population = self.get_fitness()
+        self.fitness_population = self.get_fitness()[0]
         self.best = np.argmax(self.fitness_population)
         self.mean = np.mean(self.fitness_population)
         self.std = np.std(self.fitness_population)
@@ -47,7 +47,7 @@ class Evolve:
         self.migration_amount = migration_amount
         self.num_islands = num_islands
         self.islands = [self.initialize() for _ in range(self.num_islands)]
-        self.fitness_islands = [self.get_fitness(island) for island in self.islands]
+        self.fitness_islands = [self.get_fitness(island)[0] for island in self.islands]
 
 
 
@@ -73,7 +73,7 @@ class Evolve:
             self.islands[next_island][replace_indices] = migrants
 
             # Update the fitness of the next island after migration
-            self.fitness_islands[next_island] = self.get_fitness(self.islands[next_island])
+            self.fitness_islands[next_island] = self.get_fitness(self.islands[next_island])[0]
 
     # Runs simulation, returns fitness f
     def simulation(self, individual):
@@ -85,11 +85,22 @@ class Evolve:
         return max(0.0000000001, (fitness_individual - min(self.fitness_population)) / (max(self.fitness_population) - min(self.fitness_population)))
 
     # evaluation
-    def get_fitness(self, population=[], individual = []):
+    def get_fitness(self, population=None, individual=[]):
+        """
+        Calculate the fitness of individuals in a population based on the simulation results. 
+        If fitness sharing is enabled, the fitness of an individual is adjusted based on its similarity to others.
+
+        Parameters:
+        - population (list or np.ndarray, default=0): List of genotypes. A genotype represents the values for the weights in a neural network.
+
+        Returns:
+        - np.ndarray: Array containing the fitness values of the individuals in the population.
+        """
+
         if len(individual) > 0:
 
-            fitness_vs_individual_enemy = {}
-            energy_per_enemy = {}
+            fitness_vs_individual_enemy = []
+            energy_per_enemy = []
 
             for enemy in self.enemies:
                 self.env = Environment(experiment_name=experiment_name,
@@ -101,81 +112,70 @@ class Evolve:
                     speed="fastest",
                     visuals=False)
                 
-                try:
-                    fitness, enemy_health = self.simulation(individual)
-                except:
-                    print(individual)
+                fitness, enemy_health = self.simulation(np.array(individual))
 
                 # append fitness of individual vs each enemy
-                fitness_vs_individual_enemy[enemy] = fitness
+                fitness_vs_individual_enemy.append(fitness)
 
                 # append energy each enemy after fighting individual
-                energy_per_enemy[enemy] = enemy_health
+                energy_per_enemy.append(enemy_health)
 
             # count the enemies beaten, add 1 to avoid fitness being 0
-            beaten = sum([1 for energy in energy_per_enemy if energy == 0]) + 1
-            beaten = len([energy for energy in energy_per_enemy if energy == 0])
-            print(beaten, energy_per_enemy)
-            return fitness_vs_individual_enemy, energy_per_enemy, beaten
+            beaten = [1 if energy == 0 else 0 for energy in energy_per_enemy]
 
-        if len(population) == 0:
-            
-            fitness_population = []
-            for individual in self.population:
-                fitness_vs_individual_enemy = []
-                energy_per_enemy = []
+            total_beaten = sum([1 for energy in energy_per_enemy if energy == 0]) + 0.0001
 
-                for enemy in self.enemies:
-                    self.env = Environment(experiment_name=experiment_name,
-                        enemies=[enemy],
-                        playermode="ai",
-                        player_controller=player_controller(n_hidden_neurons),
-                        enemymode="static",
-                        level=2,
-                        speed="fastest",
-                        visuals=False)
-                    
-                    fitness, enemy_health = self.simulation(individual)
+            # modified fitness function accounting for enemies beaten
+            fitness_individual_total = np.sum(fitness_vs_individual_enemy)/len(self.enemies)*total_beaten
+            # create dictionary with round info
+            dict_round_info = {'total_fitness': fitness_individual_total, 'fitness_vs_individual_enemy': fitness_vs_individual_enemy, 'energy_per_enemy': energy_per_enemy, 'beaten': beaten, 'total_beaten': total_beaten}
 
-                    # append fitness of individual vs each enemy
-                    fitness_vs_individual_enemy.append(fitness)
+            return dict_round_info
 
-                    # append energy each enemy after fighting individual
-                    energy_per_enemy.append(enemy_health)
+        if population is None:
+            population = self.population
 
-                    # count the enemies beaten, add 1 to avoid fitness being 0
-                    beaten = sum([1 for energy in energy_per_enemy if energy == 0]) + 1
+        fitness_population = []
+        dict_round_info_population = {}
+        for individual in self.population:
+            fitness_vs_individual_enemy = []
+            energy_per_enemy = []
 
-                fitness_population.append((sum(fitness_vs_individual_enemy)/len(self.enemies)) * beaten)
+            for enemy in self.enemies:
+                self.env = Environment(experiment_name=experiment_name,
+                    enemies=[enemy],
+                    playermode="ai",
+                    player_controller=player_controller(n_hidden_neurons),
+                    enemymode="static",
+                    level=2,
+                    speed="fastest",
+                    visuals=False)
+                
+                fitness, enemy_health = self.simulation(np.array(individual))
 
-        else:
-            fitness_population = []
-            for individual in population:
-                fitness_vs_individual_enemy = []
-                energy_per_enemy = []
+                # append fitness of individual vs each enemy
+                fitness_vs_individual_enemy.append(fitness)
 
-                for enemy in self.enemies:
-                    self.env = Environment(experiment_name=experiment_name,
-                        enemies=[enemy],
-                        playermode="ai",
-                        player_controller=player_controller(n_hidden_neurons),
-                        enemymode="static",
-                        level=2,
-                        speed="fastest",
-                        visuals=False)
-                    
-                    fitness, enemy_health = self.simulation(individual)
+                # append energy each enemy after fighting individual
+                energy_per_enemy.append(enemy_health)
+                
+            beaten = [1 if energy == 0 else 0 for energy in energy_per_enemy]
 
-                     # append fitness of individual vs each enemy
-                    fitness_vs_individual_enemy.append(fitness)
-                    # append energy each enemy after fighting individual
-                    energy_per_enemy.append(enemy_health)
-                    # count the enemies beaten, add 1 to avoid fitness being 0
-                    beaten = sum([1 for energy in energy_per_enemy if energy == 0]) + 1
+            # count the enemies beaten, add 0.0001 to avoid fitness being 0
+            total_beaten = sum([1 for energy in energy_per_enemy if energy == 0]) + 0.0001
 
-                fitness_population.append((sum(fitness_vs_individual_enemy)/len(self.enemies)) * beaten)
+            # modified fitness function accounting for enemies beaten
+            fitness_individual_total = np.sum(fitness_vs_individual_enemy)/len(self.enemies)*total_beaten
 
-        return np.array(fitness_population)
+            # create dictionary with round info
+            dict_round_info = {'fitness_vs_individual_enemy':fitness_vs_individual_enemy, 'energy_per_enemy':energy_per_enemy, 'beaten':beaten, 'total_beaten': total_beaten}
+
+            # append fitness of individual to finess of total population list
+            fitness_population.append(fitness_individual_total)
+            # append dictionary with round info to dictionary with round info of total population
+            dict_round_info_population[tuple(individual)] = dict_round_info 
+
+        return np.array(fitness_population), dict_round_info_population
 
 
     def tournament(self):
@@ -269,7 +269,7 @@ class Evolve:
             # select the fittest individuals from the population
             self.population = self.population[fittest]
 
-            self.fitness_population = self.get_fitness(self.population)
+            self.fitness_population = self.get_fitness(self.population)[0]
         
         elif self.survivor_mode == 'tournament':
 
@@ -278,7 +278,7 @@ class Evolve:
             self.fitness_population = np.append(self.fitness_population, fitness_offspring)
 
             self.population = np.array([self.tournament()[j] for _ in range(int(self.population_size / self.tournament_lambda)) for j in range(self.tournament_lambda)])
-            self.fitness_population = self.get_fitness(self.population)
+            self.fitness_population = self.get_fitness(self.population)[0]
 
         elif self.survivor_mode == 'roulette':
 
@@ -328,7 +328,7 @@ class Evolve:
 
                 # New individuals by crossover
                 offspring = self.reproduce()
-                fitness_offspring = self.get_fitness(offspring)
+                fitness_offspring = self.get_fitness(offspring)[0]
 
                 self.survivor_selection(offspring, fitness_offspring)
 
@@ -387,7 +387,7 @@ class Evolve:
         if not os.path.exists('results'):
             os.makedirs('results')
         # Check that filename.txt is non-existent to avoid overwriting long computing work
-        assert not os.path.exists(filepath), f"{filepath} already exists."
+        # assert not os.path.exists(filepath), f"{filepath} already exists."
 
         # Fetch and compile values that we need from the class variables
         # Combine all islands into a single population
@@ -396,17 +396,20 @@ class Evolve:
         # Get the global best individual and their fitness
         global_best_index = np.argmax(combined_fitness)
         best_individual = combined_population[global_best_index]
-        fitness_vs_individual_enemy, energy_per_enemy, beaten = self.get_fitness(individual=best_individual)
+        total_fitness, fitness_vs_individual_enemy, energy_per_enemy, beaten, total_beaten = self.get_fitness(individual=best_individual).values()
 
         with open(filepath, 'w') as f:
             # Write the description
             f.write(f"{description}\n")
             # Write the best individual
             f.write(f"{best_individual}\n")
+
             # Write the enemy-fitness dictionary
-            f.write(f"{fitness_vs_individual_enemy}\n")
-            f.write(f"{energy_per_enemy}\n")
-            f.write(f"{beaten}\n")
+            f.write(f"Overall fitness:  {total_fitness}\n")
+            f.write(f"The fitness per enemy: {fitness_vs_individual_enemy}\n")
+            f.write(f"The energy per enemy after the simulation: {energy_per_enemy}\n")
+            f.write(f"The beaten enemies are: {beaten}\n")
+            f.write(f"Total beaten enemies: {int(total_beaten)}\n")
         
 
 # Run the code below only when this script is executed, not when imported.
@@ -414,7 +417,7 @@ if __name__ == "__main__":
 
     os.environ["SDL_VIDEODRIVER"] = "dummy"
 
-    population_size = 10
+    population_size = 100
     generations = 2
     mutation_probability = 0.2
     n_hidden_neurons = 10
