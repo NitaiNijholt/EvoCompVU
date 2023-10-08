@@ -222,10 +222,10 @@ class EvolveIsland:
         if self.survivor_mode == 'lambda,mu':
 
             # in (mu, lamda_ survivor selection the offspring replaces all the parents
-            self.population = offspring
+            self.population = offspring[:]
 
             # select the fittest individuals from the population
-            self.population = self.population[np.argsort(self.population[:, 1])[::-1]][:self.population_size]
+            self.population = sorted(self.population, key=lambda x: x[1], reverse=True)[:self.population_size]
 
         elif self.survivor_mode == 'tournament':
 
@@ -285,11 +285,11 @@ class EvolveIsland:
                 print("Migration this generation")
                 self.migrate()
 
-        # Combine all islands into a single population at the end
-        combined_population = np.vstack(self.islands)
+        # Combine all islands into a single population list
+        combined_population = [individual for island in self.islands for individual in island]
 
-        # Get the global best individual and their fitness
-        global_best_individual = combined_population[np.argsort(combined_population[:, 1])[::-1]][0]
+        # Find the global best individual and their fitness
+        global_best_individual = max(combined_population, key=lambda x: x[1])
 
         return ((global_best_individual[0], global_best_individual[1]), global_plot_data)
 
@@ -307,12 +307,11 @@ class EvolveIsland:
         filepath = f"results/islanding/{filename}.txt"
 
 
-        # Combine all islands into a single population
-        combined_population = np.vstack(self.islands)
+        # Combine all islands into a single population list
+        combined_population = [individual for island in self.islands for individual in island]
 
-        # Get the global best individual and their fitness
-        global_best_index = np.argmax(combined_population[:, 1])
-        best_individual = combined_population[global_best_index][0]
+        # Find the global best individual and their fitness
+        best_individual = max(combined_population, key=lambda x: x[1])[0]
         total_fitness, fitness_vs_individual_enemy, energy_per_enemy, beaten, total_beaten = self.get_fitness(individual=best_individual, return_dict=True, enemies=[1, 2, 3, 4, 5, 6, 7, 8]).values()
 
         with open(filepath, 'w') as f:
