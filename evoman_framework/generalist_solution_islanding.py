@@ -294,7 +294,7 @@ class EvolveIsland:
         return ((global_best_individual[0], global_best_individual[1]), global_plot_data)
 
 
-    def save(self, filename, description):
+    def save(self, filename, description, N=1):
         """
         description: THE MOST IMPORTANT variable, you should always include:
             - which EA was run
@@ -304,30 +304,45 @@ class EvolveIsland:
 
         """
 
-        filepath = f"results/islanding/{filename}.txt"
-
-
         # Combine all islands into a single population list
         combined_population = [individual for island in self.islands for individual in island]
 
-        # Find the global best individual and their fitness
-        best_individual = max(combined_population, key=lambda x: x[1])[0]
-        total_fitness, fitness_vs_individual_enemy, energy_per_enemy, beaten, total_beaten = self.get_fitness(individual=best_individual, return_dict=True, enemies=[1, 2, 3, 4, 5, 6, 7, 8]).values()
+        # # Find the global best individual and their fitness
+        # best_individual = max(combined_population, key=lambda x: x[1])[0]
+        sorted_population = sorted(combined_population, key=lambda x: x[1], reverse=True)
 
-        with open(filepath, 'w') as f:
+        best_individuals = []
 
-            # Write the description
-            f.write(f"{description}\n")
+        # Keep track of unique fitness values
+        unique_fitness_values = set()
 
-            # Write the best individual
-            f.write(f"{best_individual}\n")
+        for individual, fitness in sorted_population:
+            if fitness not in unique_fitness_values:
+                best_individuals.append(individual)
+                unique_fitness_values.add(fitness)
 
-            # Write the enemy-fitness dictionary
-            f.write(f"Overall fitness:  {total_fitness}\n")
-            f.write(f"The fitness per enemy: {fitness_vs_individual_enemy}\n")
-            f.write(f"The energy per enemy after the simulation: {energy_per_enemy}\n")
-            f.write(f"The beaten enemies are: {beaten}\n")
-            f.write(f"Total beaten enemies: {int(total_beaten)}\n")
+            if len(best_individuals) >= N:
+                break
+            
+        for i, individual in enumerate(best_individuals):
+
+            filepath = f"results/islanding/{filename}_{i}.txt"
+            total_fitness, fitness_vs_individual_enemy, energy_per_enemy, beaten, total_beaten = self.get_fitness(individual=individual, return_dict=True, enemies=[1, 2, 3, 4, 5, 6, 7, 8]).values()
+
+            with open(f"{filepath}", 'w') as f:
+
+                # Write the description
+                f.write(f"{description}\n")
+
+                # Write the best individual
+                f.write(f"{individual}\n")
+
+                # Write the enemy-fitness dictionary
+                f.write(f"Overall fitness:  {total_fitness}\n")
+                f.write(f"The fitness per enemy: {fitness_vs_individual_enemy}\n")
+                f.write(f"The energy per enemy after the simulation: {energy_per_enemy}\n")
+                f.write(f"The beaten enemies are: {beaten}\n")
+                f.write(f"Total beaten enemies: {int(total_beaten)}\n")
         
 
 # Run the code below only when this script is executed, not when imported.

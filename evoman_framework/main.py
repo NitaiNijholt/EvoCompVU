@@ -120,18 +120,40 @@ def get_tuning_parameters(settings, mode, trial):
     if mode == 'islanding':
         settings['migration frequency'] = trial.suggest_int('migration frequency', 1, 10)
         settings['migration size'] = trial.suggest_int('migration size', 1, 20)
-        # settings['number of islands'] = trial.suggest_int('number of islands', 1, 8)
+        settings['number of islands'] = trial.suggest_int('number of islands', 2, 6)
     elif mode == 'fitness_sharing':
         settings['sharing alpha'] = trial.suggest_float('sharing alpha', 1., 10.)
         settings['haring sigma'] = trial.suggest_float('sharing sigma', 1., 10.)
     return settings
+
+
+def save(filename, evolve):
+    # Give second chance to save results, as the results might be more interesting than previously thought
+    if not filename:
+        print("Saving is currently disabled.")
+        print("This is a second chance to still save the results.")
+        print("If you want to keep the results, type the name of the file you wish to save it in. Otherwise just press enter")
+        filename = input()
+        if filename:
+            filename = check_filename(filename)
+            print("There is also a probability to save more than 1 individual, but rather the best N. By default, N = 1.")
+            print("Type the integer N if another N is desired.")
+            N = input()
+
+            if not N:
+                N = 1
+            else:
+                N = int(N)
+    
+    # Save the results if a valid filename is provided
+    if filename:
+        evolve.save(filename, settings, N)
 
 def run(mode, settings, filename = None, tuning = False):
 
     # Ensures provided filename is valid before the simulation starts
     if filename:
         filename = check_filename(filename)
-
 
     # Run correct evolutionary algorithm
     if mode == 'islanding':
@@ -148,6 +170,34 @@ def run(mode, settings, filename = None, tuning = False):
 
         else:
             evolve = evolve_island(settings, tuning)
+            while True:
+                evolve.enemies = [1, 2, 3, 4, 5, 6, 7, 8]
+                evolve.get_fitness()
+                save(filename, evolve)
+                print("The individuals are saved, or not depending on your choice. You can now continue this simulation.")
+                print("Type anything to continue this simulation. Just type enter to quit")
+
+                if len(input()) > 0:
+                    print("Type the amount of generations wished to be added")
+                    generations = int(input())
+                    evolve.generations = generations
+                    settings['generations'] = generations
+                    print(f"Now type the enemies you wish to train on. The current enemies are: {settings['enemies']}. Press enter to use the same set")
+                    enemies = input()
+
+                    if enemies:
+                        enemies = eval(enemies)
+                        settings['enemies'] = enemies
+                        evolve.enemies = enemies
+                    else:
+                        evolve.enemies = settings['enemies']
+                    evolve.get_fitness()
+                    evolve.run()
+
+                else:
+                    break
+
+
 
     elif mode == 'fitness_sharing':
         if tuning:
@@ -163,52 +213,49 @@ def run(mode, settings, filename = None, tuning = False):
 
         else:
             evolve = evolve_niche(settings, tuning)
-    
-    # Give second chance to save results, as the results might be more interesting than previously thought
-    if not filename:
-        print("Saving is currently disabled.")
-        print("This is a second chance to still save the results.")
-        print("If you want to keep the results, type the name of the file you wish to save it in. Otherwise just press enter")
-        filename = input()
-        if filename:
-            filename = check_filename(filename)
-    
-    # Save the results if a valid filename is provided
-    if filename:
-        evolve.save(filename, settings)
+            evolve.enemies = [1, 2, 3, 4, 5, 6, 7, 8]
+            evolve.get_fitness()
+
+
 
 os.environ["SDL_VIDEODRIVER"] = "dummy"
 
-# Pick i for islanding and f for fitness sharing
-mode = 'f'
 
-tuning = True
+
+
+
+
+
+# Pick i for islanding and f for fitness sharing
+mode = 'i'
+
+tuning = False
 
 # General settings
 settings = {
     'population size': 50,
-    'generations': 3,
-    'mutation probability': 0.105,
+    'generations': 5,
+    'mutation probability': 0.0406,
     'number of hidden neurons': 10,
-    'mutation stepsize': 0.324,
+    'mutation stepsize': 0.30,
     'recombination mode': 'line',
     'survivor selection mode': 'tournament',
     'survivor selection lambda': 141,
-    'k': 4,
-    'tournament lambda': 1,
+    'k': 5,
+    'tournament lambda': 2,
     'number of parents per reproducion event': 2,
     'number of offspring per reproduction event': 2,
     'experiment name': 'optimization_test',
-    'enemies': [1, 2, 3, 4],
+    'enemies': [2, 4],
     'tuning sample size': 1
 }
 
 # Additional settings for the island model
 if mode in ['island', 'i', 'islanding']:
     mode = 'islanding'
-    settings['number of islands'] = 2
-    settings['migration size'] = 5
-    settings['migration frequency'] = 7
+    settings['number of islands'] = 6
+    settings['migration size'] = 3
+    settings['migration frequency'] = 4
 
 # Additional settings for the fitness sharing model
 elif mode in ['fitness_sharing', 'share_fitness', 'f', 'fs', 'f s', 'f_s', 'fitness sharing', 'share fitness']:
@@ -218,7 +265,7 @@ elif mode in ['fitness_sharing', 'share_fitness', 'f', 'fs', 'f s', 'f_s', 'fitn
     settings['parent selection mode'] = 'roulette'
 
 if tuning:
-    settings['trials'] = 2
+    settings['trials'] = 50
     settings['tuning sample size'] = 2
 
 
