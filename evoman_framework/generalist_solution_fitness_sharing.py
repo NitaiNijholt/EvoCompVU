@@ -2,6 +2,7 @@ from evoman.environment import Environment
 from demo_controller import player_controller
 import numpy as np
 import os
+import sys
 
 class EvolveNiche:
 
@@ -73,7 +74,7 @@ class EvolveNiche:
         '''
         
         # Compute the Euclidean distance between the two individuals
-        return np.sqrt(np.sum((individual1 - individual2)**2))
+        return np.sqrt(sum((x - y) ** 2 for x, y in zip(individual1, individual2)))
 
     def share(self, d: np.array):
         '''
@@ -153,7 +154,7 @@ class EvolveNiche:
 
         fitness_population = []
         dict_round_info_population = {}
-        for individual in self.population:
+        for individual in population:
             fitness_vs_individual_enemy = []
             energy_per_enemy = []
 
@@ -195,23 +196,28 @@ class EvolveNiche:
 
             # Initialize a zero vector to store the cumulative similarity scores for each individual
             similarity_vector = np.zeros(len(fitness_population))
-            print(len(similarity_vector))
 
             # Loop through each individual in the population
             for index, individual_1 in enumerate(population):
-                commulative_similarity = 0  # Initialize cumulative similarity for the current individual
+
+                # Initialize cumulative similarity for the current individual
+                commulative_similarity = 0
                 if mode == 'phenotype':
+
                     beaten_vector_individual_1 = dict_round_info_population[tuple(individual_1)]['beaten']
+
                     bit_flippled_beaten_vector_individual_1 = [1 if beaten == 0 else 0 for beaten in beaten_vector_individual_1]
-                # Calculate the similarity score of the current individual with every other individual in the population
+                
+                    # Calculate the similarity score of the current individual with every other individual in the population
                     for individual_2 in population:
                         beaten_vector_individual_2 = dict_round_info_population[tuple(individual_2)]['beaten']
-                        commulative_similarity += self.share(self.similarity_score(bit_flippled_beaten_vector_individual_1, beaten_vector_individual_2))
+                        commulative_similarity += self.share(self.similarity_score(beaten_vector_individual_1, beaten_vector_individual_2))
                 
                 else:
                     for individual_2 in population:
                             beaten_vector_individual_2 = dict_round_info_population[tuple(individual_2)]['beaten']
                             commulative_similarity += self.share(self.similarity_score(individual_1, individual_2))
+
                 # Store the cumulative similarity score for the current individual
                 similarity_vector[index] = commulative_similarity
             
@@ -335,9 +341,7 @@ class EvolveNiche:
 
             # Add offspring to existing population. Population size is now much bigger
             self.population = np.vstack((self.population, offspring))
-            print('length population:', len(self.population))
             self.fitness_population = np.append(self.fitness_population, fitness_offspring)
-            print('length fitness population:', len(self.fitness_population))
 
             # Find individual with the best fitness
             self.best = np.argmax(self.fitness_population)
@@ -347,8 +351,7 @@ class EvolveNiche:
 
             # Calculate probability of surviving generation according to fitness individuals
             probs = fitness_population_normalized/sum(fitness_population_normalized)
-            print('length probs array:', len(probs))
-            print('length population:', len(self.population))
+
             # Pick population_size individuals at random, weighted according to their fitness
             chosen = np.random.choice(len(self.population), self.population_size, p=probs, replace=False)
 
@@ -442,14 +445,14 @@ class EvolveNiche:
 if __name__ == "__main__":
 
     os.environ["SDL_VIDEODRIVER"] = "dummy"
-    population_size = 100
-    generations = 10
+    population_size = 50
+    generations = 20
     mutation_probability = 0.043551807574295706
     mutation_sigma = 0.718031541166932
     n_hidden_neurons = 10
 
     # 'line' or 'uniform'
-    recombination = 'line'
+    recombination = 'uniform'
 
     # 'lambda,mu' or 'roulette'
     survivor_selection = 'roulette'
