@@ -10,6 +10,7 @@ import numpy as np
 from scipy import stats
 from matplotlib.ticker import MultipleLocator
 
+
 def read_file(filename):
     with open(filename, 'r') as f:
         lines = f.readlines()
@@ -20,8 +21,8 @@ def extract_data(lines):
     current_enemy = None
     for line in lines:
         line = line.strip()
-        if line.startswith("Enemy"):
-            current_enemy = int(line.split()[1])
+        if line.startswith("Team"):
+            current_enemy = line.split()[1]
             data[current_enemy] = []
         elif line:
             generations = eval(line)
@@ -33,49 +34,13 @@ def extract_data(lines):
     return data
 
 
-# Assymetrical CI, DONT USE:
-# def bootstrap_ci(data, n_bootstrap=10000, alpha=0.05):
-#     """Calculate the low and high percentiles for a bootstrap confidence interval."""
-#     resamples = [np.random.choice(data, len(data), replace=True).mean() for _ in range(n_bootstrap)]
-#     return np.percentile(resamples, 100 * alpha / 2), np.percentile(resamples, 100 * (1 - alpha / 2))
-
-# def lineplot(data1, data2):
-#     for enemy in data1.keys():
-#         plt.figure()
-        
-#         for data, label_prefix in zip([data1, data2], ["20 pop ", "10 pop "]):
-#             gen_numbers = list(range(1, len(data[enemy]) + 1))
-            
-#             best_means = [np.mean(gen['best']) for gen in data[enemy]]
-#             avg_means = [np.mean(gen['avg']) for gen in data[enemy]]
-
-#             # Calculate the lower and upper bounds of the confidence interval
-#             ci_lowers, ci_uppers = zip(*[bootstrap_ci(gen['avg']) for gen in data[enemy]])
-            
-#             plt.plot(gen_numbers, best_means, label=f'{label_prefix}max')
-#             plt.plot(gen_numbers, avg_means, label=f'{label_prefix}mean')
-            
-#             plt.fill_between(gen_numbers, 
-#                              ci_lowers,
-#                              ci_uppers, 
-#                              alpha=0.2)
-        
-#         plt.title(f"Enemy {enemy}")
-#         plt.xlabel('Generation')
-#         plt.ylabel('Fitness')
-#         plt.legend()
-#         plt.gca().xaxis.set_major_locator(MaxNLocator(integer=True))  # Ensure x-axis ticks are integers
-#         plt.show()
-
-
-# Use this:
 def lineplot(data1, data2):
     num_enemies = len(data1.keys())
     fig, axs = plt.subplots(1, num_enemies, figsize=(5 * num_enemies, 5))
     hypothesis_tests_avg_total = [] 
     for ax, enemy in zip(axs, data1.keys()):
         hypothesis_test_per_enemy_mean = []
-        for data, label_prefix in zip([data1, data2], [" Fitness sharing", " Islanding"]):
+        for data, label_prefix in zip([data1, data2], [EA1, EA2]):
             gen_numbers = list(range(1, len(data[enemy]) + 1))
             
             best_means = [np.mean(gen['best']) for gen in data[enemy]]
@@ -92,7 +57,7 @@ def lineplot(data1, data2):
             print(len(best_values[-1]))
             # print(avg_values)
             
-            if label_prefix == " Fitness sharing":
+            if label_prefix == EA1:
                 colour = "orange"
             else:
                 colour = "green"
@@ -118,7 +83,7 @@ def lineplot(data1, data2):
 
 
 
-        ax.set_title(f"Enemy {enemy}")
+        ax.set_title(f"Enemy group {enemy}")
         ax.set_xlabel('Generation')
         ax.set_ylabel('Fitness')
         ax.legend()
@@ -130,9 +95,16 @@ def lineplot(data1, data2):
     return hypothesis_tests_avg_total
 
 
-# Reading and parsing the data from the files
-file1 = 'data_lineplot_fitness_final.txt'
-file2 = 'data_lineplot_islanding_final.txt'
+'''
+CHANGE THE TWO FILENAMES WITH BOTH EA RESULTS
+'''
+file1 = 'data_lineplot_test.txt'
+file2 = 'data_lineplot_test2.txt'
+"""
+CHANGE THE LABEL NAMES 
+"""
+EA1 = 'Genotype'
+EA2 = 'Faux fenotype'
 
 data1 = extract_data(read_file(file1))
 data2 = extract_data(read_file(file2))
@@ -141,7 +113,7 @@ data2 = extract_data(read_file(file2))
 
 
 # save mean and max in last generation
-# with open('results_run_task/results_mean_max.txt', 'w') as f:
+# with open('results_mean_max.txt', 'w') as f:
 #     json.dump({'mean_max': mean_max, 'max_max': max_max}, f)
 
 
@@ -150,7 +122,7 @@ testresults = lineplot(data1, data2)
 print(testresults)
 
 # save the results of the statistical tests
-with open('results_run_task/results_statistical_tests_lineplots.txt', 'w') as f:
+with open('results_statistical_tests_lineplots.txt', 'w') as f:
     json.dump(testresults, f)
 
 
@@ -173,13 +145,10 @@ def extract_final_statistics(data, method_name):
     return pd.DataFrame(rows)
 
 # Extracting data for both methods
-df_data1 = extract_final_statistics(data1, "Fitness sharing")
-df_data2 = extract_final_statistics(data2, "Islanding")
+df_data1 = extract_final_statistics(data1, EA1)
+df_data2 = extract_final_statistics(data2, EA2)
 
 # Concatenating the two dataframes to get a single dataframe
 final_df = pd.concat([df_data1, df_data2]).reset_index(drop=True)
 
 print(final_df)
-
-
-
