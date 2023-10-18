@@ -7,11 +7,12 @@ class EvolveIsland:
 
     def __init__(self, experiment_name, n_hidden_neurons, population_size, generations, mutation_probability, recombination, survivor_selection, k, n_parents, n_offspring, tournament_lambda, survivor_lambda, migration_frequency, migration_amount, num_islands, mutation_stepsize, enemies = [8]):
         self.env = Environment(experiment_name=experiment_name,
-                  enemies=[1],
+                  enemies=enemies,
                   playermode="ai",
                   player_controller=player_controller(n_hidden_neurons),
                   enemymode="static",
                   level=2,
+                  multiplemode='yes',
                   speed="fastest",
                   visuals=False)
         
@@ -100,41 +101,9 @@ class EvolveIsland:
 
         if len(individual) > 0:
 
-            fitness_vs_individual_enemy = []
-            energy_per_enemy = []
+            fitness, enemy_health = self.simulation(np.array(individual))
 
-            for enemy in enemies:
-                self.env = Environment(experiment_name=self.experiment_name,
-                    enemies=[enemy],
-                    playermode="ai",
-                    player_controller=player_controller(self.n_hidden_neurons),
-                    enemymode="static",
-                    level=2,
-                    speed="fastest",
-                    visuals=False)
-                
-                fitness, enemy_health = self.simulation(np.array(individual))
-
-                # Append fitness of individual vs each enemy
-                fitness_vs_individual_enemy.append(fitness)
-
-                # Append energy each enemy after fighting individual
-                energy_per_enemy.append(enemy_health)
-
-            # Count the enemies beaten, add 1 to avoid fitness being 0
-            beaten = [1 if energy == 0 else 0 for energy in energy_per_enemy]
-
-            total_beaten = sum([1 for energy in energy_per_enemy if energy == 0]) + 0.0001
-
-            # Modified fitness function accounting for enemies beaten
-            fitness_individual_total = np.sum(fitness_vs_individual_enemy)/len(enemies)*total_beaten
-
-            if return_dict:
-
-                # Create dictionary with round info
-                return {'total_fitness': fitness_individual_total, 'fitness_vs_individual_enemy': fitness_vs_individual_enemy, 'energy_per_enemy': energy_per_enemy, 'beaten': beaten, 'total_beaten': total_beaten}
-
-            return fitness_individual_total
+            return fitness
 
     def tournament(self):
         '''
@@ -214,7 +183,8 @@ class EvolveIsland:
         # Mutates the offspring
         for i in range(len(individual)):
             if np.random.uniform() <= self.mutation_probability:
-                individual[i] += np.random.normal(0, self.mutation_stepsize)
+                individual[i] = np.random.uniform(-1, 1)
+                # individual[i] -= np.random.normal(1, self.mutation_stepsize)
         return individual
 
 
@@ -226,6 +196,9 @@ class EvolveIsland:
 
             # select the fittest individuals from the population
             self.population = sorted(self.population, key=lambda x: x[1], reverse=True)[:self.population_size]
+            if self.population[0][1] > 500:
+                filename = np.random.uniform()
+                self.save(f"500_{filename}", filename, 3)
 
         elif self.survivor_mode == 'tournament':
 
@@ -290,6 +263,21 @@ class EvolveIsland:
 
         # Find the global best individual and their fitness
         global_best_individual = max(combined_population, key=lambda x: x[1])
+        if global_best_individual[1] > 700:
+            filename = np.random.uniform()
+            self.save(f"700_{filename}", filename, 3)
+
+        elif global_best_individual[1] > 600:
+            filename = np.random.uniform()
+            self.save(f"600_{filename}", filename, 3)
+
+        elif global_best_individual[1] > 500:
+            filename = np.random.uniform()
+            self.save(f"500_{filename}", filename, 3)
+
+        elif global_best_individual[1] > 400:
+            filename = np.random.uniform()
+            self.save(f"500_{filename}", filename, 3)
 
         return ((global_best_individual[0], global_best_individual[1]), global_plot_data)
 
@@ -370,7 +358,7 @@ if __name__ == "__main__":
     n_parents = 2
     n_offspring = 2
     experiment_name = 'optimization_test'
-    enemies = [1, 2, 3, 4]
+    enemies = [1, 2]
     evolve = EvolveIsland(experiment_name, n_hidden_neurons, population_size, generations, mutation_probability, recombination, survivor_selection, k, n_parents, n_offspring, tournament_lambda, survivor_lambda, migration_frequency, migration_amount, num_islands, mutation_stepsize, enemies)
     evolve.run()
-    evolve.save('test2', 'test')
+    # evolve.save('test2', 'test')
