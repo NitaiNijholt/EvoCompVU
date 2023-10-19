@@ -38,9 +38,13 @@ def lineplot(data1, data2):
     num_enemies = len(data1.keys())
     fig, axs = plt.subplots(1, num_enemies, figsize=(5 * num_enemies, 5))
     hypothesis_tests_avg_total = [] 
+
     for ax, enemy in zip(axs, data1.keys()):
         hypothesis_test_per_enemy_mean = []
+        x = zip([data1, data2], [EA1, EA2])
+        
         for data, label_prefix in zip([data1, data2], [EA1, EA2]):
+            print(data.keys())
             gen_numbers = list(range(1, len(data[enemy]) + 1))
             
             best_means = [np.mean(gen['best']) for gen in data[enemy]]
@@ -80,14 +84,15 @@ def lineplot(data1, data2):
             hypothesis_test_per_enemy_mean.append(avg_values[-1])
         hypothesis_tests_avg_total.append(two_sample_ttest(hypothesis_test_per_enemy_mean[0], hypothesis_test_per_enemy_mean[1], alpha = 0.05))
             
-
-
-
-        ax.set_title(f"Enemy group {enemy}")
-        ax.set_xlabel('Generation')
-        ax.set_ylabel('Fitness')
-        ax.legend()
+        """
+        TODO MAYBE MAKE FONTSIZES BELOW EVEN BIGGER
+        """
+        ax.set_title(f"Enemy group {enemy}", fontsize=16)
+        ax.set_xlabel('Generation', fontsize=14)
+        ax.set_ylabel('Fitness', fontsize=14)
+        ax.legend(fontsize=12)
         ax.xaxis.set_major_locator(MultipleLocator(5))  # Set tick interval to 5
+        ax.tick_params(axis='both', which='major', labelsize=12)
         ax.set_ylim(0, max(100, ax.get_ylim()[1]))  # Set y-axis upper limit to at least 100
 
     plt.tight_layout()  # Adjust the spacing between subplots
@@ -96,15 +101,15 @@ def lineplot(data1, data2):
 
 
 '''
-CHANGE THE TWO FILENAMES WITH BOTH EA RESULTS
+Change the two filenames here
 '''
 file1 = 'data_lineplot_gen_island.txt'
 file2 = 'data_lineplot_sharing.txt'
 """
-CHANGE THE LABEL NAMES 
+TODO CHANGE THE LABEL NAMES TO SMTH DESCRIPTIVE
 """
 EA1 = 'Genotype'
-EA2 = 'Result Based'
+EA2 = 'Results Based'
 
 data1 = extract_data(read_file(file1))
 data2 = extract_data(read_file(file2))

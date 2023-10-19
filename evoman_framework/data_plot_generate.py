@@ -46,7 +46,7 @@ def train(network_file, data_file, runs=10):
     n_parents = 2
     n_offspring = 2
     experiment_name = 'optimization_test'
-    enemygroups = {f'Team [1,4,6,7]': [1,4,6,7], 'Team [1, 2, 3, 4, 5, 6, 7, 8]': [1, 2, 3, 4, 5, 6, 7, 8]}
+    enemygroups = {f'Team [1,4,6,7]': [1,4,6,7], 'Team [1,2,3,4,5,6,7,8]': [1, 2, 3, 4, 5, 6, 7, 8]}
 
     # Placeholder for storing best individuals and results for plotting
     best_individuals = dict()
