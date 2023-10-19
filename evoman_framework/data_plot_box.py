@@ -68,9 +68,10 @@ labels=['Team [1,4,6,7]', 'Team [1,2,3,4,5,6,7,8]', 'Team [1,4,6,7]', 'Team [1,2
 plt.figure(figsize=(12, 6))
 bp = plt.boxplot([gains_teamsmall[0],gains_teambig[0],gains_teamsmall[1],gains_teambig[1]], labels=labels)
 # plt.title("Combined Boxplot for all Enemies", y=1.08)  # Adjust the title's y position
-plt.ylabel('Gain')
-plt.xlabel('Training Team')
-plt.xticks(rotation=45)
+plt.ylabel('Gain', fontsize=16)
+plt.xlabel('Training Team', fontsize=16)
+plt.xticks(rotation=45, fontsize = 14)
+plt.tick_params(axis='x', labelsize=14)
 
 # Calculate maximum y value to place algorithm labels just above the highest boxplot
 ymax = max([item.get_ydata().max() for item in bp['whiskers']])
@@ -78,7 +79,7 @@ ymax = max([item.get_ydata().max() for item in bp['whiskers']])
 # Place the additional labels with increased vertical offset
 algorithms = ["Genotype", "Results Based"]
 for i, algorithm in enumerate(algorithms):
-    plt.text(2*i + 1.5, ymax + 2.7 * ymax, algorithm, ha='center', va='center', fontsize=12)  # Increased the vertical offset
+    plt.text(2*i + 1.5, ymax + 2.7 * ymax, algorithm, ha='center', va='center', fontsize=16)  # Increased the vertical offset
 
 plt.tight_layout(rect=[0, 0, 1, 0.95])  # Adjust the vertical spacing
 plt.show()
