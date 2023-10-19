@@ -29,13 +29,13 @@ def train(network_file, data_file, runs=10):
     """
     # PARAMETERS
     population_size = 50
-    generations = 3
-    mutation_probability = 0.2
+    generations = 30
+    mutation_probability = 0.105
     n_hidden_neurons = 10
-    num_islands = 1
-    migration_amount = 1
-    migration_frequency = 7
-    mutation_stepsize = 0.215
+    num_islands = 5
+    migration_amount = 10
+    migration_frequency = 5
+    mutation_stepsize = 0.324
     # 'line' or 'uniform'
     recombination = 'line'
     # 'lambda,mu' or 'tournament'
@@ -46,7 +46,7 @@ def train(network_file, data_file, runs=10):
     n_parents = 2
     n_offspring = 2
     experiment_name = 'optimization_test'
-    enemygroups = {f'Team [1,2,3,4]': [1,2,3,4], 'Team [5,6,7,8]': [5,6,7,8]}
+    enemygroups = {f'Team [1,4,6,7]': [1,4,6,7], 'Team [1, 2, 3, 4, 5, 6, 7, 8]': [1, 2, 3, 4, 5, 6, 7, 8]}
 
     # Placeholder for storing best individuals and results for plotting
     best_individuals = dict()
@@ -99,4 +99,5 @@ CHANGE THE FILENAME TO THE FILES YOU WANT TO CREATE THIS TIME
 
 MAKE SURE runs=10
 """
-train('data_champion_test2.txt', 'data_lineplot_test2.txt', runs=2)
+os.environ["SDL_VIDEODRIVER"] = "dummy"
+train('data_champion_gen_island.txt', 'data_lineplot_gen_island.txt', runs=10)

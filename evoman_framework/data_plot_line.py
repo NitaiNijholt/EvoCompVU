@@ -98,13 +98,13 @@ def lineplot(data1, data2):
 '''
 CHANGE THE TWO FILENAMES WITH BOTH EA RESULTS
 '''
-file1 = 'data_lineplot_test.txt'
-file2 = 'data_lineplot_test2.txt'
+file1 = 'data_lineplot_gen_island.txt'
+file2 = 'data_lineplot_sharing.txt'
 """
 CHANGE THE LABEL NAMES 
 """
 EA1 = 'Genotype'
-EA2 = 'Faux fenotype'
+EA2 = 'Result Based'
 
 data1 = extract_data(read_file(file1))
 data2 = extract_data(read_file(file2))
