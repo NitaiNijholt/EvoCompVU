@@ -13,7 +13,7 @@ import pandas as pd
 CHANGE FILENAMES IN `open()` FUNCTIONS
 """
 # Read files with champions
-with open('data_champion_gen_island.txt', 'r') as f:
+with open('data_champion_islanding.txt', 'r') as f:
     fs_champions = json.load(f)
     # Change enemy number and run number to int and champions to np.arrays
     fs_champions = {k: {int(run): np.array(v) for run, v in runs.items()} for k, runs in fs_champions.items()}
@@ -39,24 +39,44 @@ gains_dict = {}
 
 # Per Team, play both algorithms 5 times
 i = 0
+very_best = 0
 for algorithm in fs_champions, isl_champions:
     i+=1
-
+    print(f"EA {[0, 'Fitness Sharing', 'The Island Model'][i]}")
     gains_dict[i] = {}
+    average = 0
+    best = 0
+    best_index = 0
 
     for team in algorithm.keys():
+        print(f"{team}")
         
         gains_dict[i][team] = []
 
         for run in range(10):
 
             gain = 0
+            current = 0
             for n in range(5):
 
                 f, p, e, t = env.play(pcont=algorithm[team][run])
                 gain += (p - e) / 5
+                average += f / 5
+                current += f / 5
+            if current > best:
+                best = current
+                best_individual = algorithm[team][run]
+
             
             gains_dict[i][team].append(gain)
+
+        if best > very_best:
+            very_best = best
+            very_best_individual = best_individual
+
+        print(f"Very best score: {best}")
+        print(f"Average over 10 runs: {average / 10}")
+        np.savetxt("very_best_individual", very_best_individual)
 
 # Create the boxplots
 gains_teamsmall = [gains['Team [1,4,6,7]'] for gains in gains_dict.values()]
