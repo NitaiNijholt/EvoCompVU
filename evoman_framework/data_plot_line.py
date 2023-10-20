@@ -87,12 +87,12 @@ def lineplot(data1, data2):
         """
         TODO MAYBE MAKE FONTSIZES BELOW EVEN BIGGER
         """
-        ax.set_title(f"Enemy group {enemy}", fontsize=16)
-        ax.set_xlabel('Generation', fontsize=14)
-        ax.set_ylabel('Fitness', fontsize=14)
-        ax.legend(fontsize=12)
+        ax.set_title(f"Enemy group {enemy}", fontsize=26)
+        ax.set_xlabel('Generation', fontsize=26)
+        ax.set_ylabel('Fitness', fontsize=26)
+        ax.legend(fontsize=20)
         ax.xaxis.set_major_locator(MultipleLocator(5))  # Set tick interval to 5
-        ax.tick_params(axis='both', which='major', labelsize=12)
+        ax.tick_params(axis='both', which='major', labelsize=17)
         ax.set_ylim(0, max(100, ax.get_ylim()[1]))  # Set y-axis upper limit to at least 100
 
     # plt.tight_layout()  # Adjust the spacing between subplots

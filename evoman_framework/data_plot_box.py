@@ -85,16 +85,14 @@ gains_teambig = [gains['Team [1,2,3,4,5,6,7,8]'] for gains in gains_dict.values(
 # Update the labels
 labels=["Islanding Fitness Genotype", "Islanding Fitness Beaten", "Islanding Fitness Genotype", "Islanding Fitness Beaten"]
 
-# Update the boxplot creation with the corrected order
+# Update the boxplot creation with the correct order
 plt.figure(figsize=(12, 8))
 bp = plt.boxplot([gains_teamsmall[0], gains_teamsmall[1], gains_teambig[0], gains_teambig[1]], labels=labels)
 
-# Create the combined boxplot
-plt.figure(figsize=(12, 8))
-bp = plt.boxplot([gains_teamsmall[0],gains_teambig[0],gains_teamsmall[1],gains_teambig[1]], labels=labels)
 # plt.title("Combined Boxplot for all Enemies", y=1.08)  # Adjust the title's y position
 plt.ylabel('Gain', fontsize=16)
 plt.xlabel('EA', fontsize=16)
+
 plt.xticks(rotation=45, fontsize = 14)
 plt.tick_params(axis='x', labelsize=14)
 
@@ -116,14 +114,8 @@ plt.show()
 
 # Extract data for each boxplot
 data_boxplot1 = gains_teamsmall[0]
-data_boxplot2 = gains_teambig[0]
-data_boxplot3 = gains_teamsmall[1]
-data_boxplot4 = gains_teambig[1]
-
-# Extract data for each boxplot
-data_boxplot1 = gains_teamsmall[0]
-data_boxplot2 = gains_teambig[0]
-data_boxplot3 = gains_teamsmall[1]
+data_boxplot2 = gains_teamsmall[1]
+data_boxplot3 = gains_teambig[0]
 data_boxplot4 = gains_teambig[1]
 
 # Compute means for each set of data
@@ -158,10 +150,10 @@ mean_std_boxplot4 = f"{mean_boxplot4:.2f} ± {std_boxplot4:.2f}"
 # Conduct t-test for Islanding Fitness Genotype
 # Conduct t-test for Team Small Genotype vs Team Small Beaten
 print("Team Small Genotype vs Team Small Beaten \n")
-t_stat1, p_value1, decision1 = two_sample_ttest(data_boxplot1, data_boxplot3)
+t_stat1, p_value1, decision1 = two_sample_ttest(data_boxplot1, data_boxplot2)
 
 print("\nTeam Big Genotype vs Team Big Beaten \n")
-t_stat2, p_value2, decision2 = two_sample_ttest(data_boxplot2, data_boxplot4)
+t_stat2, p_value2, decision2 = two_sample_ttest(data_boxplot3, data_boxplot4)
 
 
 
@@ -185,7 +177,7 @@ with open('results_statistical_tests_boxplot.txt', 'w') as f:
 
 # Create a table with the computed values
 means_data_updated = {
-    'Boxplot': ['Islanding Fitness Genotype: Enemies [1,4,6,7]', 'Islanding Fitness Genotype: Enemies [1,2,3,4,5,6,7,8]', 'Islanding Fitness Beaten: Enemies [1,4,6,7]', 'Islanding Fitness Beaten: Enemies [1,2,3,4,5,6,7,8]'],
+    'Boxplot': ['Islanding Fitness Genotype: Enemies [1,4,6,7]', 'Islanding Fitness Beaten: Enemies [1,4,6,7]', 'Islanding Fitness Genotype: Enemies [1,2,3,4,5,6,7,8]', 'Islanding Fitness Beaten: Enemies [1,2,3,4,5,6,7,8]'],
     'Mean ± 1 Std': [mean_std_boxplot1, mean_std_boxplot2, mean_std_boxplot3, mean_std_boxplot4],
     'Min': [min_boxplot1, min_boxplot2, min_boxplot3, min_boxplot4],
     'Max': [max_boxplot1, max_boxplot2, max_boxplot3, max_boxplot4]
