@@ -36,7 +36,7 @@ def extract_data(lines):
 
 def lineplot(data1, data2):
     num_enemies = len(data1.keys())
-    fig, axs = plt.subplots(1, num_enemies, figsize=(5 * num_enemies, 5))
+    fig, axs = plt.subplots(1, num_enemies, figsize=(10 * num_enemies, 10))
     hypothesis_tests_avg_total = [] 
 
     for ax, enemy in zip(axs, data1.keys()):
@@ -95,7 +95,8 @@ def lineplot(data1, data2):
         ax.tick_params(axis='both', which='major', labelsize=12)
         ax.set_ylim(0, max(100, ax.get_ylim()[1]))  # Set y-axis upper limit to at least 100
 
-    plt.tight_layout()  # Adjust the spacing between subplots
+    # plt.tight_layout()  # Adjust the spacing between subplots
+    plt.savefig('lineplot.png')
     plt.show()
     return hypothesis_tests_avg_total
 
@@ -108,11 +109,15 @@ file2 = 'data_lineplot_sharing.txt'
 """
 TODO CHANGE THE LABEL NAMES TO SMTH DESCRIPTIVE
 """
-EA1 = 'Genotype'
-EA2 = 'Results Based'
+EA1 = 'Islanding Fitness Genotype'
+EA2 = 'Islanding Fitness Beaten'
 
 data1 = extract_data(read_file(file1))
 data2 = extract_data(read_file(file2))
+
+
+print(data1.keys())
+print(data2.keys())
 
 # extract mean and max in last generation
 
@@ -138,13 +143,20 @@ def extract_final_statistics(data, method_name):
     rows = []
     for enemy, generations in data.items():
         final_gen = generations[-1]  # get the last generation
+        
+        best_mean = np.mean(final_gen['best'])
+        best_std = np.std(final_gen['best'])
+        
+        avg_mean = np.mean(final_gen['avg'])
+        avg_std = np.std(final_gen['avg'])
+        
         row = {
             'Enemy': enemy,
             'Method': method_name,
-            'Best Mean': np.mean(final_gen['best']),
-            'Best Max': np.max(final_gen['best']),
-            'Avg Mean': np.mean(final_gen['avg']),
-            'Best Mean': np.max(final_gen['avg'])
+            'Best Mean ± 1 Std': f"{best_mean:.2f} ± {best_std:.2f}",
+            'Best Max': np.round(np.max(final_gen['best']),2),
+            'Avg Mean ± 1 Std': f"{avg_mean:.2f} ± {avg_std:.2f}",
+            'Avg Max': np.round(np.max(final_gen['avg']),2)
         }
         rows.append(row)
     return pd.DataFrame(rows)

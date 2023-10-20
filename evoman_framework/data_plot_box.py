@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 import json
+import pandas as pd
 
 """
 CHANGE FILENAMES IN `open()` FUNCTIONS
@@ -61,15 +62,19 @@ for algorithm in fs_champions, isl_champions:
 gains_teamsmall = [gains['Team [1,4,6,7]'] for gains in gains_dict.values()]
 gains_teambig = [gains['Team [1,2,3,4,5,6,7,8]'] for gains in gains_dict.values()]
 
-# Create the labels
-labels=['Team [1,4,6,7]', 'Team [1,2,3,4,5,6,7,8]', 'Team [1,4,6,7]', 'Team [1,2,3,4,5,6,7,8]']
+# Update the labels
+labels=["Islanding Fitness Genotype", "Islanding Fitness Beaten", "Islanding Fitness Genotype", "Islanding Fitness Beaten"]
+
+# Update the boxplot creation with the corrected order
+plt.figure(figsize=(12, 8))
+bp = plt.boxplot([gains_teamsmall[0], gains_teamsmall[1], gains_teambig[0], gains_teambig[1]], labels=labels)
 
 # Create the combined boxplot
-plt.figure(figsize=(12, 6))
+plt.figure(figsize=(12, 8))
 bp = plt.boxplot([gains_teamsmall[0],gains_teambig[0],gains_teamsmall[1],gains_teambig[1]], labels=labels)
 # plt.title("Combined Boxplot for all Enemies", y=1.08)  # Adjust the title's y position
 plt.ylabel('Gain', fontsize=16)
-plt.xlabel('Training Team', fontsize=16)
+plt.xlabel('EA', fontsize=16)
 plt.xticks(rotation=45, fontsize = 14)
 plt.tick_params(axis='x', labelsize=14)
 
@@ -77,14 +82,98 @@ plt.tick_params(axis='x', labelsize=14)
 ymax = max([item.get_ydata().max() for item in bp['whiskers']])
 
 # Place the additional labels with increased vertical offset
-algorithms = ["Genotype", "Results Based"]
+algorithms = ['Enemy group [1,4,6,7]', 'Enemy group [1,2,3,4,5,6,7,8]']
 for i, algorithm in enumerate(algorithms):
     plt.text(2*i + 1.5, ymax + 2.7 * ymax, algorithm, ha='center', va='center', fontsize=16)  # Increased the vertical offset
 
 plt.tight_layout(rect=[0, 0, 1, 0.95])  # Adjust the vertical spacing
+plt.savefig('boxplots.png')
 plt.show()
 
 
 # TODO
 # TODO Statistical test
-# TODO
+
+# Extract data for each boxplot
+data_boxplot1 = gains_teamsmall[0]
+data_boxplot2 = gains_teambig[0]
+data_boxplot3 = gains_teamsmall[1]
+data_boxplot4 = gains_teambig[1]
+
+# Extract data for each boxplot
+data_boxplot1 = gains_teamsmall[0]
+data_boxplot2 = gains_teambig[0]
+data_boxplot3 = gains_teamsmall[1]
+data_boxplot4 = gains_teambig[1]
+
+# Compute means for each set of data
+mean_boxplot1 = np.mean(data_boxplot1)
+mean_boxplot2 = np.mean(data_boxplot2)
+mean_boxplot3 = np.mean(data_boxplot3)
+mean_boxplot4 = np.mean(data_boxplot4)
+
+# Compute minimum and maximum for each set of data
+min_boxplot1 = np.round(np.min(data_boxplot1),2)
+max_boxplot1 = np.round(np.max(data_boxplot1),2)
+min_boxplot2 = np.round(np.min(data_boxplot2),2)
+max_boxplot2 = np.round(np.max(data_boxplot2),2)
+min_boxplot3 = np.round(np.min(data_boxplot3),2)
+max_boxplot3 = np.round(np.max(data_boxplot3),2)
+min_boxplot4 = np.round(np.min(data_boxplot4),2)
+max_boxplot4 = np.round(np.max(data_boxplot4),2)
+
+# Compute standard deviation for each set of data
+std_boxplot1 = np.std(data_boxplot1)
+std_boxplot2 = np.std(data_boxplot2)
+std_boxplot3 = np.std(data_boxplot3)
+std_boxplot4 = np.std(data_boxplot4)
+
+# Compute mean ± standard deviation
+mean_std_boxplot1 = f"{mean_boxplot1:.2f} ± {std_boxplot1:.2f}"
+mean_std_boxplot2 = f"{mean_boxplot2:.2f} ± {std_boxplot2:.2f}"
+mean_std_boxplot3 = f"{mean_boxplot3:.2f} ± {std_boxplot3:.2f}"
+mean_std_boxplot4 = f"{mean_boxplot4:.2f} ± {std_boxplot4:.2f}"
+
+
+# Conduct t-test for Islanding Fitness Genotype
+# Conduct t-test for Team Small Genotype vs Team Small Beaten
+print("Team Small Genotype vs Team Small Beaten \n")
+t_stat1, p_value1, decision1 = two_sample_ttest(data_boxplot1, data_boxplot3)
+
+print("\nTeam Big Genotype vs Team Big Beaten \n")
+t_stat2, p_value2, decision2 = two_sample_ttest(data_boxplot2, data_boxplot4)
+
+
+
+testresults = {
+    "Islanding Fitness Genotype: Enemies [1,4,6,7] vs Islanding Fitness Genotype: Enemies [1,2,3,4,5,6,7,8]": {
+        "t-statistic": t_stat1,
+        "p-value": p_value1,
+        "decision": decision1
+    },
+    "Islanding Fitness Beaten: Enemies [1,4,6,7] vs Islanding Fitness Beaten: Enemies [1,2,3,4,5,6,7,8]": {
+        "t-statistic": t_stat2,
+        "p-value": p_value2,
+        "decision": decision2
+    }
+}
+
+# Save the results to a JSON file
+with open('results_statistical_tests_boxplot.txt', 'w') as f:
+    json.dump(testresults, f)
+
+
+# Create a table with the computed values
+means_data_updated = {
+    'Boxplot': ['Islanding Fitness Genotype: Enemies [1,4,6,7]', 'Islanding Fitness Genotype: Enemies [1,2,3,4,5,6,7,8]', 'Islanding Fitness Beaten: Enemies [1,4,6,7]', 'Islanding Fitness Beaten: Enemies [1,2,3,4,5,6,7,8]'],
+    'Mean ± 1 Std': [mean_std_boxplot1, mean_std_boxplot2, mean_std_boxplot3, mean_std_boxplot4],
+    'Min': [min_boxplot1, min_boxplot2, min_boxplot3, min_boxplot4],
+    'Max': [max_boxplot1, max_boxplot2, max_boxplot3, max_boxplot4]
+}
+df_means_updated = pd.DataFrame(means_data_updated)
+
+# Print the updated table
+print(df_means_updated)
+
+# Save the updated table to a CSV file
+df_means_updated.to_csv('means_boxplots_updated.csv', index=False)
